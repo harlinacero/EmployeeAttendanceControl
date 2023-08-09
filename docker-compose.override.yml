@@ -1,0 +1,21 @@
+version: '3.4'
+
+services:
+  ms.cassandra.db:
+    container_name: ms.cassandra.db
+    restart: always
+    volumes:
+      - C:/data/cassandra:/var/lib/cassandra
+    ports:
+      - "9042:9042"
+
+  ms.users.api:
+    container_name: db.users.api
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "DatabaseSettings:Hostname=ms.cassandra.db"
+    ports:
+      - "9000:80"
+    depends_on:
+      - ms.cassandra.db

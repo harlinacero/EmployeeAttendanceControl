@@ -8,9 +8,30 @@ services:
       - C:/data/cassandra:/var/lib/cassandra
     ports:
       - "9042:9042"
+       
+  ms.sql.employees.db:
+    container_name: ms.sql.employees.db
+    restart: always
+    volumes:
+      - C:/data/sqlServer:/var/opt/mssql/data
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: ".123Pass456."
+      ACCEPT_EULA: "Y"
+
+  ms.employees.api:
+    container_name: ms.employees.api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "ConnectionStrings:EmployeeDB=Data Source=ms.sql.employees.db; Initial Catalog=EmployeesAttendance; User ID=sa; Password=.123Pass456.; MultipleActiveResultSets=True;"
+    ports:
+      - "9010:80"
+    depends_on:
+      - ms.sql.employees.db
 
   ms.users.api:
-    container_name: db.users.api
+    container_name: ms.users.api
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Development

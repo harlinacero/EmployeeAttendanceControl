@@ -3,12 +3,9 @@
     "Docker Compose": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
-      "composeLaunchAction": "LaunchBrowser",
-      "composeLaunchServiceName": "ms.users.api",
-      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}/swagger",
       "serviceActions": {
-        "ms.users.api": "StartDebugging",
-        "ms.cassandra.db": "StartWithoutDebugging"
+        "ms.employees.api": "StartDebugging",
+        "ms.users.api": "StartDebugging"
       }
     }
   }

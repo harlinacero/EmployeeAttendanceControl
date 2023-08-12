@@ -26,7 +26,6 @@ builder.Services.AddScoped(typeof(IUsersContext), typeof(UsersContext));
 builder.Services.AddScoped(typeof(IUserRepository), typeof(UserRepository));
 
 var automapperConfig = new MapperConfiguration(mapperConfig => mapperConfig.AddMaps(typeof(UsersMapperProfile).Assembly));
-
 IMapper mapper = automapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 

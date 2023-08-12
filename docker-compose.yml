@@ -4,8 +4,18 @@ services:
   ms.cassandra.db:
     image: cassandra
 
+  ms.sql.employees.db:
+    image: mcr.microsoft.com/mssql/server
+
+  ms.employees.api:
+    image: ${DOCKER_REGISTRY-}msemployeesapi
+    build:
+      context: .
+      dockerfile: ms.employees/ms.employees.api/Dockerfile
+
   ms.users.api:
     image: ${DOCKER_REGISTRY-}msusersapi
     build:
       context: .
-      dockerfile: ms.users.api/Dockerfile
+      dockerfile: ms.users/ms.users.api/Dockerfile
+

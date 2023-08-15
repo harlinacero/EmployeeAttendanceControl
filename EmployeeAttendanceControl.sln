@@ -25,6 +25,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.users.infraestructure", 
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{650774B5-8828-4E54-AE48-5D7776DA85C2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ms-attendances", "ms-attendances", "{4DDC642A-C521-4204-BD5F-0C96E0959C06}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.attendances.api", "ms.attendances\ms.attendances.api\ms.attendances.api.csproj", "{A6A81F8D-6543-4B43-9A48-36656F020CC8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.attendances.application", "ms.attendances\ms.attendances.application\ms.attendances.application.csproj", "{F2A7409E-A43D-4094-84FD-4E53AEA58137}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.attendances.domain", "ms.attendances\ms.attendances.domain\ms.attendances.domain.csproj", "{DCED85E5-7264-48F2-AC52-69D58B441E06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.attendances.infraestucture", "ms.attendances\ms.attendances.infraestucture\ms.attendances.infraestucture.csproj", "{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,6 +77,22 @@ Global
 		{650774B5-8828-4E54-AE48-5D7776DA85C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{650774B5-8828-4E54-AE48-5D7776DA85C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{650774B5-8828-4E54-AE48-5D7776DA85C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6A81F8D-6543-4B43-9A48-36656F020CC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6A81F8D-6543-4B43-9A48-36656F020CC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6A81F8D-6543-4B43-9A48-36656F020CC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6A81F8D-6543-4B43-9A48-36656F020CC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2A7409E-A43D-4094-84FD-4E53AEA58137}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2A7409E-A43D-4094-84FD-4E53AEA58137}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2A7409E-A43D-4094-84FD-4E53AEA58137}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2A7409E-A43D-4094-84FD-4E53AEA58137}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCED85E5-7264-48F2-AC52-69D58B441E06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCED85E5-7264-48F2-AC52-69D58B441E06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCED85E5-7264-48F2-AC52-69D58B441E06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCED85E5-7264-48F2-AC52-69D58B441E06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -80,6 +106,10 @@ Global
 		{DD81514F-7A40-48EF-8C60-875D28E6A205} = {20C00679-2249-4666-BA7F-BFB7A2ACAB24}
 		{67DE4032-2E38-4680-846E-CE660CFDFB3C} = {20C00679-2249-4666-BA7F-BFB7A2ACAB24}
 		{87FF098F-3B96-4578-AB73-578DE626E464} = {20C00679-2249-4666-BA7F-BFB7A2ACAB24}
+		{A6A81F8D-6543-4B43-9A48-36656F020CC8} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
+		{F2A7409E-A43D-4094-84FD-4E53AEA58137} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
+		{DCED85E5-7264-48F2-AC52-69D58B441E06} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
+		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BF64BB30-14F1-40F0-B6C2-EA9D7522CA59}

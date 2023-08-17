@@ -5,7 +5,8 @@
       "commandVersion": "1.0",
       "serviceActions": {
         "ms.employees.api": "StartDebugging",
-        "ms.users.api": "StartDebugging"
+        "ms.users.api": "StartDebugging",
+        "ms.attendances.api": "StartDebugging"
       }
     }
   }

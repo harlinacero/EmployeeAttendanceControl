@@ -5,6 +5,6 @@ namespace ms.attendances.infraestucture.Data
 {
     public interface IAttendanceContext
     {
-        IMongoCollection<AttendanceMongo> AttendanceCollection { get; set; }
+        IMongoCollection<AttendanceMongo> AttendanceCollection { get; }
     }
 }

@@ -8,14 +8,16 @@ namespace ms.attendances.infraestucture.Data
     {
         private readonly IConfiguration _configuration;
         private IMongoDatabase _mongoDatabase;
-        public IMongoCollection<AttendanceMongo> AttendanceCollection =>
-            _mongoDatabase.GetCollection<AttendanceMongo>(_configuration.GetConnectionString("AttendanceCollection"));
+
 
         public AttendanceMongoContext(IConfiguration configuration)
         {
             _configuration = configuration;
             _mongoDatabase = new MongoClient(_configuration.GetConnectionString("MongoDB"))
-                .GetDatabase("AttendanceDB");
+                .GetDatabase(_configuration.GetConnectionString("AttendanceDB"));
         }
+
+        public IMongoCollection<AttendanceMongo> AttendanceCollection =>
+            _mongoDatabase.GetCollection<AttendanceMongo>(_configuration.GetConnectionString("AttendanceCollection"));
     }
 }

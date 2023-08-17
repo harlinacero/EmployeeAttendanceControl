@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MongoDB.Driver;
 using ms.attendances.domain.Entities;
 using ms.attendances.domain.Repositories;
 using ms.attendances.infraestucture.Data;
@@ -25,11 +26,13 @@ namespace ms.attendances.infraestucture.Repositories
 
         public async Task<IEnumerable<AttendanceRecord>> GetAllAttendances(string userName)
         {
-            //var queryResult = await ((userName != null) ?
-            //    _context.AttendanceCollection.FindAsync(a => a.UserName == userName) :
-            //    _context.AttendanceCollection.FindAsync(a => true));
-            var queryResult = await _context.AttendanceCollection.FindAsync(att => att.UserName == userName);
+            var filter = Builders<AttendanceMongo>.Filter.Eq(a => a.UserName, userName);
+            var queryResult = await ((!string.IsNullOrEmpty(userName)) ? 
+                _context.AttendanceCollection.FindAsync(filter)
+                : _context.AttendanceCollection.FindAsync(Builders<AttendanceMongo>.Filter.Empty));
+            
             var res = queryResult.ToListAsync().Result;
+            return _mapper.Map<IEnumerable<AttendanceRecord>>(res);
         }
     }
 }

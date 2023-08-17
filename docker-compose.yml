@@ -1,6 +1,9 @@
 version: '3.4'
 
 services:
+  ms.mongo.attendances.db:
+    image: mongo
+
   ms.cassandra.db:
     image: cassandra
 
@@ -18,4 +21,11 @@ services:
     build:
       context: .
       dockerfile: ms.users/ms.users.api/Dockerfile
+
+
+  ms.attendances.api:
+    image: ${DOCKER_REGISTRY-}msattendancesapi
+    build:
+      context: .
+      dockerfile: ms.attendances/ms.attendances.api/Dockerfile
 

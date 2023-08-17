@@ -1,6 +1,14 @@
 version: '3.4'
 
 services:
+  ms.mongo.attendances.db:
+    container_name: ms.mongo.attendances.db
+    restart: always
+    volumes:
+      -  C:/data/mongo:/data/db
+    ports:
+      - "27017:27017"
+
   ms.cassandra.db:
     container_name: ms.cassandra.db
     restart: always
@@ -40,3 +48,14 @@ services:
       - "9000:80"
     depends_on:
       - ms.cassandra.db
+
+  ms.attendances.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "ConnectionStrings:MongoDB=mongodb://ms.mongo.attendances.db:27017"
+      - "ConnectionStrings:AttendanceDB=DbHistoricalAttendance"
+      - "ConnectionStrings:AttendanceCollection=Attendances"
+    ports:
+      - "9020:80"
+    depends_on:
+      - ms.mongo.attendances.db 

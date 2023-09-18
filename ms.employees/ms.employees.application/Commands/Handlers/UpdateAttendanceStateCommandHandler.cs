@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MediatR;
+using ms.employees.application.Events;
 using ms.employees.application.HttpComunications;
 using ms.employees.domain.Repositories;
 using ms.rabbitmq.Events;

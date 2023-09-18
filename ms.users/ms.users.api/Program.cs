@@ -42,7 +42,7 @@ IMapper mapper = automapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 
 builder.Services.AddMediatR(typeof(GetAllUsersQueryHandler).GetTypeInfo().Assembly);
-builder.Services.AddSingleton(typeof(IConsumer), typeof(UserConsumer));
+builder.Services.AddSingleton<IConsumer, UserConsumer>();
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
 builder.Services.AddAuthentication(option =>
@@ -115,7 +115,8 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 });
 
-app.UseRabbitConsumer();
+var consumer = app.Services.GetRequiredService<IConsumer>();
+app.UseRabbitConsumer(consumer);
 
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Users Authentication API v1"));

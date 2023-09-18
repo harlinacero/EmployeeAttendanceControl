@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using ms.rabbitmq.Events;
+using ms.users.api.Events;
 using ms.users.application.Commands;
 
 namespace ms.users.api.Mappers

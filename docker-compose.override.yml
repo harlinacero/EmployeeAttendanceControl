@@ -12,15 +12,15 @@ services:
     container_name: ms.mongo.attendances.db
     restart: always
     volumes:
-      -  C:/data/mongo:/data/db
+      -  ./data/mongo:/data/db
     ports:
-      - "27017:27017"
+      - "27019:27017"
 
   ms.cassandra.db:
     container_name: ms.cassandra.db
     restart: always
     volumes:
-      - C:/data/cassandra:/var/lib/cassandra
+      - ./data/cassandra:/var/lib/cassandra
     ports:
       - "9042:9042"
        
@@ -28,9 +28,9 @@ services:
     container_name: ms.sql.employees.db
     restart: always
     volumes:
-      - C:/data/sqlServer:/var/opt/mssql/data
+      - ./data/sqlServer:/var/opt/mssql/data
     ports:
-      - "1433:1433"
+      - "1434:1433"
     environment:
       SA_PASSWORD: ".123Pass456."
       ACCEPT_EULA: "Y"
@@ -57,7 +57,7 @@ services:
       - "DatabaseSettings:Hostname=ms.cassandra.db"
       - "Communication:EventBus:HostName=ms.rabbitmq.bus" 
     ports:
-      - "9000:80"
+      - "9009:80"
     depends_on:
       - ms.cassandra.db
       - ms.rabbitmq.bus

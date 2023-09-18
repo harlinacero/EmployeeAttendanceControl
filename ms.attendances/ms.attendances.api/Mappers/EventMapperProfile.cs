@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
+using ms.attendances.api.Events;
 using ms.attendances.application.Request;
-using ms.rabbitmq.Events;
 
 namespace ms.attendances.api.Mappers
 {

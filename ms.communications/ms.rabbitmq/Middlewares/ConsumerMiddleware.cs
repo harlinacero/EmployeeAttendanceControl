@@ -7,19 +7,19 @@ namespace ms.rabbitmq.Middlewares
 {
     public static class ConsumerMiddleware
     {
-
-        public static IApplicationBuilder UseRabbitConsumer(this IApplicationBuilder app)
+        private static IConsumer Consumer { get; set; }
+        public static IApplicationBuilder UseRabbitConsumer(this IApplicationBuilder app, IConsumer consumer)
         {
-            IConsumer consumer = app.ApplicationServices.GetRequiredService<IConsumer>();
+            Consumer = consumer;
             IHostApplicationLifetime lifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
-            lifetime.ApplicationStarted.Register(() => OnStarted(consumer));
-            lifetime.ApplicationStopping.Register(() => OnStopping(consumer));
+            lifetime.ApplicationStarted.Register(OnStarted);
+            lifetime.ApplicationStopping.Register(OnStopping);
 
             return app;
         }
 
 
-        private static void OnStarted(IConsumer consumer) => consumer.Subscribe();
-        private static void OnStopping(IConsumer consumer) => consumer.Unsubscribe();
+        private static void OnStarted() => Consumer.Subscribe();
+        private static void OnStopping() => Consumer.Unsubscribe();
     }
 }

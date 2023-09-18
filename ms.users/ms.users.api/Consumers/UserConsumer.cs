@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using MediatR;
 using ms.rabbitmq.Consumers;
-using ms.rabbitmq.Events;
+using ms.users.api.Events;
 using ms.users.application.Commands;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -15,13 +15,15 @@ namespace ms.users.api.Consumers
         private readonly IMediator _mediator;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<UserConsumer> _logger;
         private IConnection _connection;
 
-        public UserConsumer(IMediator mediator, IMapper mapper, IConfiguration configuration)
+        public UserConsumer(IMediator mediator, IMapper mapper, IConfiguration configuration, ILogger<UserConsumer> logger)
         {
             _mediator = mediator;
             _mapper = mapper;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public void Subscribe()
@@ -34,7 +36,7 @@ namespace ms.users.api.Consumers
             _connection = factory.CreateConnection();
             using var channel = _connection.CreateModel();
             
-            var queue = typeof(EmployeeCreateEvent).Name;
+            var queue = nameof(EmployeeCreateEvent);
 
             // Quee storage messages in memory, allow multi connections and not is deleted if don't have any consumer
             channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
@@ -47,10 +49,12 @@ namespace ms.users.api.Consumers
 
         private async void ReceivedEvent(object? sender, BasicDeliverEventArgs e)
         {
-            if(e.RoutingKey == typeof(EmployeeCreateEvent).Name)
+            if(e.RoutingKey == nameof(EmployeeCreateEvent))
             {
+                _logger.LogInformation("Received event");
                 var message = Encoding.UTF8.GetString(e.Body.Span);
                 var employeeCreatedEvent = JsonSerializer.Deserialize<EmployeeCreateEvent>(message);
+                _logger.LogInformation("Send Create user ", message);
                 var result = await _mediator.Send(_mapper.Map<CreateUserAccountCommand>(employeeCreatedEvent));
             }
         }

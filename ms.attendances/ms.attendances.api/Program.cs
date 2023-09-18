@@ -109,7 +109,9 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 });
 
-app.UseRabbitConsumer();
+//IConsumer consumer = app.ApplicationServices.GetRequiredService<IConsumer>();
+var consumer = app.Services.GetRequiredService<IConsumer>();
+app.UseRabbitConsumer(consumer);
 
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Historical Attendance API v1"));

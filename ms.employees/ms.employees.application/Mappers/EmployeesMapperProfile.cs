@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using ms.employees.application.Commands;
+using ms.employees.application.Events;
 using ms.employees.application.Responses;
 using ms.employees.domain.Entities;
 using ms.rabbitmq.Events;

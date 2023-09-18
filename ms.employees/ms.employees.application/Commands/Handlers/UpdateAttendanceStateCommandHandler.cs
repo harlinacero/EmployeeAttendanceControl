@@ -7,17 +7,17 @@ using ms.rabbitmq.Producers;
 
 namespace ms.employees.application.Commands.Handlers
 {
-    public class UpdateEmployeeCommandHandler : IRequestHandler<UpdateEmployeeCommand, string>
+    public class UpdateAttendanceStateCommandHandler : IRequestHandler<UpdateAttendanceStateCommand, string>
     {
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IProducer _producer;
         private readonly IMapper _mapper;
         private readonly IAttendanceApiCommunication _attendanceApiCommunication;
 
-        public UpdateEmployeeCommandHandler(IEmployeeRepository employeeRepository, 
-            IProducer producer, 
-            IMapper mapper, 
-            IAttendanceApiCommunication attendanceApiCommunication = null)
+        public UpdateAttendanceStateCommandHandler(IEmployeeRepository employeeRepository,
+            IProducer producer,
+            IMapper mapper,
+            IAttendanceApiCommunication attendanceApiCommunication)
         {
             _employeeRepository = employeeRepository;
             _producer = producer;
@@ -25,13 +25,13 @@ namespace ms.employees.application.Commands.Handlers
             _attendanceApiCommunication = attendanceApiCommunication;
         }
 
-        public async Task<string> Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
+        public async Task<string> Handle(UpdateAttendanceStateCommand request, CancellationToken cancellationToken)
         {
             var userAttendances = await _attendanceApiCommunication.GetAllAttendances(request.UserName, request.Token);
-            var numberOfAttendances = userAttendances.Count(); 
+            var numberOfAttendances = userAttendances.Count();
 
             string notes = request.Notes == null ? $"[{numberOfAttendances} Asistencias]" : string.Concat(request.Notes, $" [{numberOfAttendances}] Asistencias");
-            
+
             var res = await _employeeRepository.UpdateAttendanceStateEmployee(request.UserName, request.Attendance, notes);
             var employee = await _employeeRepository.GetEmployee(request.UserName);
 

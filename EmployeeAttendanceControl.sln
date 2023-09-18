@@ -33,7 +33,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.attendances.application"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.attendances.domain", "ms.attendances\ms.attendances.domain\ms.attendances.domain.csproj", "{DCED85E5-7264-48F2-AC52-69D58B441E06}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.attendances.infraestucture", "ms.attendances\ms.attendances.infraestucture\ms.attendances.infraestucture.csproj", "{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ms.attendances.infraestucture", "ms.attendances\ms.attendances.infraestucture\ms.attendances.infraestucture.csproj", "{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ms.communications", "ms.communications", "{5CA9E2A2-40FE-4720-96D4-5D8450303259}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.rabbitmq", "ms.communications\ms.rabbitmq\ms.rabbitmq.csproj", "{B9FB16E2-32CC-4AA9-A49B-A4FE64FB732E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,6 +97,10 @@ Global
 		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9FB16E2-32CC-4AA9-A49B-A4FE64FB732E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9FB16E2-32CC-4AA9-A49B-A4FE64FB732E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9FB16E2-32CC-4AA9-A49B-A4FE64FB732E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9FB16E2-32CC-4AA9-A49B-A4FE64FB732E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,6 +118,7 @@ Global
 		{F2A7409E-A43D-4094-84FD-4E53AEA58137} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
 		{DCED85E5-7264-48F2-AC52-69D58B441E06} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
 		{5A20930E-C7B2-4C81-AD7B-06BA1E914E85} = {4DDC642A-C521-4204-BD5F-0C96E0959C06}
+		{B9FB16E2-32CC-4AA9-A49B-A4FE64FB732E} = {5CA9E2A2-40FE-4720-96D4-5D8450303259}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BF64BB30-14F1-40F0-B6C2-EA9D7522CA59}

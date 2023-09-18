@@ -29,15 +29,17 @@ namespace ms.employees.api.Controllers
         [HttpPost]
         [Route("[action]")]
         public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
-            => Ok(await _mediator.Send(new CreateEmployeeCommand(request.UserName, request.FirstName, request.LastName)));
+            => Ok(await _mediator.Send(new CreateEmployeeCommand(request.UserName, request.FirstName, request.LastName, request.Password, request.Role)));
 
         [Authorize]
         [HttpPut]
         [Route("[action]/{attendance}")]
-        public async Task<IActionResult> UpdateEmployee(bool attendance, [FromBody] string notes)
+        public async Task<IActionResult> UpdateAttendanceState(bool attendance, [FromBody] string notes)
         {
             var username = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
-            return Ok(await _mediator.Send(new UpdateEmployeeCommand(username, attendance, notes)));
+            return Ok(await _mediator.Send(new UpdateAttendanceStateCommand(username, attendance, notes, Request.Headers["Authorization"].ToString())));
         }
+
+
     }
 }

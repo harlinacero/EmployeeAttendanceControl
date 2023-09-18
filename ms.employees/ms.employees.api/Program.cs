@@ -3,11 +3,14 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ms.employees.application.HttpComunications;
 using ms.employees.application.Mappers;
 using ms.employees.application.Queries;
 using ms.employees.domain.Repositories;
 using ms.employees.infraestucture.Data;
 using ms.employees.infraestucture.Repositories;
+using ms.rabbitmq.Producers;
+using Refit;
 using System.Reflection;
 using System.Text;
 
@@ -18,6 +21,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped(typeof(IDapperContext), typeof(EmployeesDapperContext));
 builder.Services.AddScoped(typeof(IEmployeeRepository), typeof(EmployeeRepository));
+builder.Services.AddRefitClient<IAttendanceApiCommunication>().ConfigureHttpClient(c => 
+    c.BaseAddress = new Uri(builder.Configuration.GetSection("Communication:External:AttendanceApiUrl")?.Value)
+    );
 
 var automapperConfig = new MapperConfiguration(mapperConfig =>
 {
@@ -27,6 +33,7 @@ IMapper mapper = automapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 
 builder.Services.AddMediatR(typeof(GetAllEmployeesQuery).GetTypeInfo().Assembly);
+builder.Services.AddSingleton(typeof(IProducer), typeof(EventProducer));
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
 builder.Services.AddAuthentication(option =>
@@ -46,7 +53,7 @@ builder.Services.AddAuthentication(option =>
         RequireExpirationTime = true,
         ClockSkew = TimeSpan.Zero
     };
-}); 
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -54,7 +61,7 @@ builder.Services.AddSwaggerGen(swagger =>
 {
     swagger.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Users Authentication Api",
+        Title = "Employees Api",
         Version = "v1"
     });
     swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()

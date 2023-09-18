@@ -3,12 +3,16 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ms.attendances.api.Consumers;
+using ms.attendances.api.Mappers;
 using ms.attendances.application.Commands;
 using ms.attendances.application.Mappers;
 using ms.attendances.domain.Repositories;
 using ms.attendances.infraestucture.Data;
 using ms.attendances.infraestucture.Mappers;
 using ms.attendances.infraestucture.Repositories;
+using ms.rabbitmq.Consumers;
+using ms.rabbitmq.Middlewares;
 using System.Reflection;
 using System.Text;
 
@@ -18,17 +22,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddScoped(typeof(IAttendanceContext), typeof(AttendanceMongoContext));
+builder.Services.AddTransient(typeof(IAttendanceContext), typeof(AttendanceMongoContext));
 builder.Services.AddScoped(typeof(IAttendanceRepository), typeof(AttendanceRepository));
+builder.Services.AddTransient(typeof(IAttendanceRepository), typeof(AttendanceRepository));
 
 var automapperConfig = new MapperConfiguration(mapperConfig =>
 {
     mapperConfig.AddMaps(typeof(AttendanceProfile).Assembly);
     mapperConfig.AddMaps(typeof(AttendanceMongoProfile).Assembly);
+    mapperConfig.AddProfile(typeof(EventMapperProfile));
 });
 IMapper mapper = automapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 
 builder.Services.AddMediatR(typeof(CreateAttendanceCommand).GetTypeInfo().Assembly);
+builder.Services.AddSingleton(typeof(IConsumer), typeof(AttendancesConsumer));
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
 builder.Services.AddAuthentication(option =>
@@ -56,7 +64,7 @@ builder.Services.AddSwaggerGen(swagger =>
 {
     swagger.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "Users Authentication Api",
+        Title = "Attendances Api",
         Version = "v1"
     });
     swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
@@ -100,6 +108,8 @@ app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
 });
+
+app.UseRabbitConsumer();
 
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Historical Attendance API v1"));

@@ -1,6 +1,13 @@
 version: '3.4'
 
 services:
+  ms.rabbitmq.bus:
+    container_name: ms.rabbitmq.bus
+    restart: always
+    ports:
+     - "5672:5672"
+     - "15672:15672"
+
   ms.mongo.attendances.db:
     container_name: ms.mongo.attendances.db
     restart: always
@@ -33,10 +40,14 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - "ConnectionStrings:EmployeeDB=Data Source=ms.sql.employees.db; Initial Catalog=EmployeesAttendance; User ID=sa; Password=.123Pass456.; MultipleActiveResultSets=True;"
+      - "Communication:EventBus:HostName=ms.rabbitmq.bus"
+      - "Communication:External:AttendanceApiUrl=http://ms.attendances.api:80"
     ports:
       - "9010:80"
     depends_on:
       - ms.sql.employees.db
+      - ms.rabbitmq.bus
+      - ms.attendances.api
 
   ms.users.api:
     container_name: ms.users.api
@@ -44,18 +55,23 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - "DatabaseSettings:Hostname=ms.cassandra.db"
+      - "Communication:EventBus:HostName=ms.rabbitmq.bus" 
     ports:
       - "9000:80"
     depends_on:
       - ms.cassandra.db
+      - ms.rabbitmq.bus
 
   ms.attendances.api:
+    container_name: ms.attendances.api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - "ConnectionStrings:MongoDB=mongodb://ms.mongo.attendances.db:27017"
       - "ConnectionStrings:AttendanceDB=DbHistoricalAttendance"
       - "ConnectionStrings:AttendanceCollection=Attendances"
+      - "Communication:EventBus:HostName=ms.rabbitmq.bus"
     ports:
       - "9020:80"
     depends_on:
       - ms.mongo.attendances.db 
+      - ms.rabbitmq.bus

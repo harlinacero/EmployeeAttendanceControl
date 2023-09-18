@@ -28,7 +28,10 @@ namespace ms.users.infraestructure.Repositories
             return user;
         }
 
-        public async Task<List<User>> GetAllUsers() => await Task.FromResult(_ussersMapper.Fetch<User>().ToList());
+        public async Task<List<User>> GetAllUsers()
+        {
+            return await Task.FromResult(_ussersMapper.Fetch<User>().ToList());
+        }
 
         public async Task<User> GetUser(string username, string password)
         {

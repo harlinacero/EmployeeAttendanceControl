@@ -8,7 +8,7 @@ namespace ms.employees.domain.Entities
         public string UserName { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public DateTime? LastAttendance { get; set; }
+        public DateTime? LastAttendanceDate { get; set; }
         public bool LastAttendanceState { get; set; }
         public string LastAttendanceNotes { get; set; }
     }

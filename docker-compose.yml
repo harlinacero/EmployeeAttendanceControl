@@ -1,6 +1,9 @@
 version: '3.4'
 
 services:
+  ms.rabbitmq.bus:
+    image: rabbitmq:3-management
+
   ms.mongo.attendances.db:
     image: mongo
 

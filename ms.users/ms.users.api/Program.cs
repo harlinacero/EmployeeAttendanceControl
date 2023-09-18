@@ -3,6 +3,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ms.rabbitmq.Consumers;
+using ms.rabbitmq.Middlewares;
+using ms.users.api.Consumers;
+using ms.users.api.Mappers;
 using ms.users.application.Mappers;
 using ms.users.application.Queries.Handlers;
 using ms.users.domain.Interfaces;
@@ -11,6 +15,7 @@ using ms.users.infraestructure.Mappings;
 using ms.users.infraestructure.Repositories;
 using System.Reflection;
 using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,15 +26,23 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton(typeof(CassandraUserMapping));
 
 builder.Services.AddScoped(typeof(CassandraCluster));
+builder.Services.AddTransient(typeof(CassandraCluster));
 
 builder.Services.AddScoped(typeof(IUsersContext), typeof(UsersContext));
 builder.Services.AddScoped(typeof(IUserRepository), typeof(UserRepository));
+builder.Services.AddTransient(typeof(IUsersContext), typeof(UsersContext));
+builder.Services.AddTransient(typeof(IUserRepository), typeof(UserRepository));
 
-var automapperConfig = new MapperConfiguration(mapperConfig => mapperConfig.AddMaps(typeof(UsersMapperProfile).Assembly));
+var automapperConfig = new MapperConfiguration(mapperConfig =>
+{
+    mapperConfig.AddMaps(typeof(UsersMapperProfile).Assembly);
+    mapperConfig.AddProfile(typeof(EventMapperProfile));
+});
 IMapper mapper = automapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 
 builder.Services.AddMediatR(typeof(GetAllUsersQueryHandler).GetTypeInfo().Assembly);
+builder.Services.AddSingleton(typeof(IConsumer), typeof(UserConsumer));
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
 builder.Services.AddAuthentication(option =>
@@ -101,6 +114,8 @@ app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
 });
+
+app.UseRabbitConsumer();
 
 app.UseSwagger();
 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Users Authentication API v1"));

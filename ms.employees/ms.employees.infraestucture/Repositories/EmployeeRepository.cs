@@ -18,14 +18,21 @@ namespace ms.employees.infraestucture.Repositories
         {
             var res = await _context.Connection.ExecuteAsync(EmployeeDataSql.Create, param: new
             {
-                UserName = employee.UserName,
-                FirstName = employee.FirstName,
-                LastName = employee.LastName,
+                employee.UserName,
+                employee.FirstName,
+                employee.LastName,
                 State = employee.LastAttendanceState,
                 Notes = employee.LastAttendanceNotes
             });
 
             return res > 0 ? employee.UserName : throw new Exception("Usuario no creado");
+        }
+
+        public async Task<Employee> GetEmployee(string userName)
+        {
+            var res = await _context.Connection.QueryAsync<Employee>(EmployeeDataSql.GetEmployee,
+                                                                     new { UserName = userName });
+            return res?.FirstOrDefault();
         }
 
         public async Task<IEnumerable<Employee>> GetEmployeesAsync()
@@ -34,7 +41,7 @@ namespace ms.employees.infraestucture.Repositories
             return res?.ToList() ?? new List<Employee>();
         }
 
-        public async Task<string> UpdateAttendanceStateEmp(string userName, bool attendance, string notes)
+        public async Task<string> UpdateAttendanceStateEmployee(string userName, bool attendance, string notes)
         {
             var res = await _context.Connection.ExecuteAsync(EmployeeDataSql.Update, param: new
             {

@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   ms.rabbitmq.bus:
     container_name: ms.rabbitmq.bus
@@ -28,7 +26,7 @@ services:
     container_name: ms.sql.employees.db
     restart: always
     volumes:
-      - ./data/sqlServer:/var/opt/mssql/data
+      - sqlserver_data:/var/opt/mssql/data
     ports:
       - "1434:1433"
     environment:
@@ -75,3 +73,6 @@ services:
     depends_on:
       - ms.mongo.attendances.db 
       - ms.rabbitmq.bus
+
+volumes:
+  sqlserver_data:

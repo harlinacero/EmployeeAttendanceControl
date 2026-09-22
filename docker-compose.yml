@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   ms.rabbitmq.bus:
     image: rabbitmq:3-management
@@ -12,6 +10,9 @@ services:
 
   ms.sql.employees.db:
     image: mcr.microsoft.com/mssql/server
+    build:
+      context: .
+      dockerfile: sqlserver/Dockerfile
 
   ms.employees.api:
     image: ${DOCKER_REGISTRY-}msemployeesapi

@@ -5,6 +5,11 @@ services:
     ports:
      - "5672:5672"
      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   ms.mongo.attendances.db:
     container_name: ms.mongo.attendances.db
@@ -48,9 +53,12 @@ services:
     ports:
       - "9010:80"
     depends_on:
-      - ms.sql.employees.db
-      - ms.rabbitmq.bus
-      - ms.attendances.api
+      ms.sql.employees.db:
+        condition: service_started
+      ms.rabbitmq.bus:
+        condition: service_healthy
+      ms.attendances.api:
+        condition: service_started
 
   ms.users.api:
     container_name: ms.users.api
@@ -65,7 +73,7 @@ services:
       ms.cassandra.db:
         condition: service_healthy
       ms.rabbitmq.bus:
-        condition: service_started
+        condition: service_healthy
 
   ms.attendances.api:
     container_name: ms.attendances.api
@@ -78,8 +86,10 @@ services:
     ports:
       - "9020:80"
     depends_on:
-      - ms.mongo.attendances.db 
-      - ms.rabbitmq.bus
+      ms.mongo.attendances.db:
+        condition: service_started
+      ms.rabbitmq.bus:
+        condition: service_healthy
 
 volumes:
   cassandra_data:

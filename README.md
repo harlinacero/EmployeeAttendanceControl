@@ -29,16 +29,15 @@ Para detener y eliminar los contenedores y la red:
 docker compose down
 ```
 
-SQL Server usa el volumen Docker `sqlserver_data` para almacenar los archivos `.mdf` y `.ldf`. En una instalación nueva, prepara los permisos del volumen antes del primer arranque:
+SQL Server usa el volumen Docker `sqlserver_data` para almacenar los archivos `.mdf` y `.ldf`. El entrypoint corrige automáticamente los permisos del volumen para el usuario `mssql`, por lo que no es necesario ejecutar `chown` manualmente.
 
 ```powershell
-docker compose down
-docker volume create employeeattendancecontrol_sqlserver_data
-docker run --rm -v employeeattendancecontrol_sqlserver_data:/var/opt/mssql/data alpine:3.20 chown -R 10001:0 /var/opt/mssql/data
-docker compose up -d
+docker compose up -d --build
 ```
 
 El volumen conserva los datos aunque se eliminen los contenedores. El directorio `data/sqlServer` anterior no se elimina; se mantiene como respaldo y ya no se monta en SQL Server.
+
+MongoDB también usa el volumen Docker `mongodb_data`. El directorio `data/mongo` anterior se conserva como respaldo y ya no se monta, porque el almacenamiento WiredTiger del bind mount provocaba reinicios de MongoDB y respuestas HTTP 500 en `attendances.api`.
 
 ### Inicialización automática de SQL Server
 

@@ -18,6 +18,7 @@ namespace ms.attendances.api.Consumers
         private readonly IConfiguration _configuration;
         private readonly ILogger<AttendancesConsumer> _logger;
         private IConnection _connection;
+        private IModel _channel;
 
         public AttendancesConsumer(IMediator mediator, IMapper mapper, IConfiguration configuration, ILogger<AttendancesConsumer> logger)
         {
@@ -35,17 +36,18 @@ namespace ms.attendances.api.Consumers
             };
 
             _connection = factory.CreateConnection();
-            using var channel = _connection.CreateModel();
+            _channel = _connection.CreateModel();
 
-            var queue = typeof(AttendanceStateChangedEvent).Name;
+            var queue = nameof(AttendanceStateChangedEvent);
+
             // Quee storage messages in memory, allow multi connections and not is deleted if don't have any consumer
-            channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
-
-            var consumer = new EventingBasicConsumer(channel);
+            _channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
+            var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += ReceivedEvent;
 
             // Pusblish routing_key of message
-            channel.BasicConsume(queue: queue, autoAck: true, consumer: consumer);
+            _channel.BasicConsume(queue: queue, autoAck: true, consumer: consumer);
+            _logger.LogInformation("RabbitMQ consumer subscribed to queue {Queue}", queue);
         }
 
         private async void ReceivedEvent(object? sender, BasicDeliverEventArgs e)
@@ -55,13 +57,19 @@ namespace ms.attendances.api.Consumers
                 _logger.LogInformation("Received event");
                 var message = Encoding.UTF8.GetString(e.Body.Span);
                 var attendanceStateChangedEvent = JsonSerializer.Deserialize<AttendanceStateChangedEvent>(message);
-                
+
                 _logger.LogInformation("Send Create attendance ", attendanceStateChangedEvent);
-                var result = await _mediator.Send(new CreateAttendanceCommand(attendanceStateChangedEvent?.UserName, 
+                var result = await _mediator.Send(new CreateAttendanceCommand(attendanceStateChangedEvent?.UserName,
                     _mapper.Map<CreateAttendanceRequest>(attendanceStateChangedEvent)));
             }
         }
 
-        public void Unsubscribe() => _connection?.Dispose();
+        public void Unsubscribe()
+        {
+            _channel?.Close();
+            _channel?.Dispose();
+            _connection?.Close();
+            _connection?.Dispose();
+        }
     }
 }

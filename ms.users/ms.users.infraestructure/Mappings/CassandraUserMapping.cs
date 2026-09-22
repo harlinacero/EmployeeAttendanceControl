@@ -7,11 +7,11 @@ namespace ms.users.infraestructure.Mappings
     {
         public CassandraUserMapping()
         {
-            For<User>().TableName("User").PartitionKey(u => u.UserName)
+            For<User>().TableName("user").PartitionKey(u => u.UserName)
                 .Column(u => u.UserName, cc => cc.WithName("user_username"))
                 .Column(u => u.Password, cc => cc.WithName("user_pasword"))
                 .Column(u => u.Role, cc => cc.WithName("user_role"));
-            
+
             // Se asigna configuración global de mapeado
             MappingConfiguration.Global.Define(this);
         }

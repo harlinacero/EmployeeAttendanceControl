@@ -19,9 +19,17 @@ namespace ms.rabbitmq.Producers
 
         public void Produce(IRabbitMqEvent rabbitMqEvent)
         {
+            ArgumentNullException.ThrowIfNull(rabbitMqEvent);
+
+            var hostName = _configuration.GetValue<string>("Communication:EventBus:HostName");
+            if (string.IsNullOrWhiteSpace(hostName))
+            {
+                throw new InvalidOperationException("RabbitMQ host name is not configured.");
+            }
+
             var factory = new ConnectionFactory()
             {
-                HostName = _configuration.GetSection("Communication:EventBus:HostName").Value
+                HostName = hostName
             };
 
             using var connection = factory.CreateConnection();

@@ -7,6 +7,9 @@ services:
 
   ms.cassandra.db:
     image: cassandra
+    build:
+      context: .
+      dockerfile: cassandra/Dockerfile
 
   ms.sql.employees.db:
     image: mcr.microsoft.com/mssql/server

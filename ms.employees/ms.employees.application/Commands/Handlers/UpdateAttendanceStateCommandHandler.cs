@@ -34,8 +34,7 @@ namespace ms.employees.application.Commands.Handlers
             string notes = request.Notes == null ? $"[{numberOfAttendances} Asistencias]" : string.Concat(request.Notes, $" [{numberOfAttendances}] Asistencias");
 
             var res = await _employeeRepository.UpdateAttendanceStateEmployee(request.UserName, request.Attendance, notes);
-            var employee = await _employeeRepository.GetEmployee(request.UserName);
-
+            var employee = await _employeeRepository.GetEmployee(request.UserName) ?? throw new KeyNotFoundException($"Employee '{request.UserName}' was not found after updating attendance.");
             _producer.Produce(_mapper.Map<AttendanceStateChangedEvent>(employee));
             return res;
         }

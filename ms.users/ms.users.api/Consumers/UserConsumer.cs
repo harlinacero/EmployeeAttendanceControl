@@ -17,6 +17,7 @@ namespace ms.users.api.Consumers
         private readonly IConfiguration _configuration;
         private readonly ILogger<UserConsumer> _logger;
         private IConnection _connection;
+        private IModel _channel;
 
         public UserConsumer(IMediator mediator, IMapper mapper, IConfiguration configuration, ILogger<UserConsumer> logger)
         {
@@ -34,31 +35,38 @@ namespace ms.users.api.Consumers
             };
 
             _connection = factory.CreateConnection();
-            using var channel = _connection.CreateModel();
-            
+            _channel = _connection.CreateModel();
+
             var queue = nameof(EmployeeCreateEvent);
 
             // Quee storage messages in memory, allow multi connections and not is deleted if don't have any consumer
-            channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
-            var consumer = new EventingBasicConsumer(channel);
+            _channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
+            var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += ReceivedEvent;
 
             // Pusblish routing_key of message
-            channel.BasicConsume(queue: queue, autoAck: true, consumer: consumer);
+            _channel.BasicConsume(queue: queue, autoAck: true, consumer: consumer);
+            _logger.LogInformation("RabbitMQ consumer subscribed to queue {Queue}", queue);
         }
 
         private async void ReceivedEvent(object? sender, BasicDeliverEventArgs e)
         {
-            if(e.RoutingKey == nameof(EmployeeCreateEvent))
+            if (e.RoutingKey == nameof(EmployeeCreateEvent))
             {
                 _logger.LogInformation("Received event");
                 var message = Encoding.UTF8.GetString(e.Body.Span);
                 var employeeCreatedEvent = JsonSerializer.Deserialize<EmployeeCreateEvent>(message);
-                _logger.LogInformation("Send Create user ", message);
+                _logger.LogInformation("Create user event received: {Message}", message);
                 var result = await _mediator.Send(_mapper.Map<CreateUserAccountCommand>(employeeCreatedEvent));
             }
         }
 
-        public void Unsubscribe() => _connection.Dispose();
+        public void Unsubscribe()
+        {
+            _channel?.Close();
+            _channel?.Dispose();
+            _connection?.Close();
+            _connection?.Dispose();
+        }
     }
 }

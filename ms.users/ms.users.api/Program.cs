@@ -2,7 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using ms.rabbitmq.Consumers;
 using ms.rabbitmq.Middlewares;
 using ms.users.api.Consumers;
@@ -28,21 +28,20 @@ builder.Services.AddSingleton(typeof(CassandraUserMapping));
 builder.Services.AddScoped(typeof(CassandraCluster));
 builder.Services.AddTransient(typeof(CassandraCluster));
 
-builder.Services.AddScoped(typeof(IUsersContext), typeof(UsersContext));
-builder.Services.AddScoped(typeof(IUserRepository), typeof(UserRepository));
 builder.Services.AddTransient(typeof(IUsersContext), typeof(UsersContext));
 builder.Services.AddTransient(typeof(IUserRepository), typeof(UserRepository));
 
-var automapperConfig = new MapperConfiguration(mapperConfig =>
+builder.Services.AddAutoMapper(mapperConfig =>
 {
     mapperConfig.AddMaps(typeof(UsersMapperProfile).Assembly);
     mapperConfig.AddProfile(typeof(EventMapperProfile));
 });
-IMapper mapper = automapperConfig.CreateMapper();
-builder.Services.AddSingleton(mapper);
 
-builder.Services.AddMediatR(typeof(GetAllUsersQueryHandler).GetTypeInfo().Assembly);
-builder.Services.AddSingleton<IConsumer, UserConsumer>();
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(GetAllUsersQueryHandler).GetTypeInfo().Assembly);
+});
+builder.Services.AddSingleton(typeof(IConsumer), typeof(UserConsumer));
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
 builder.Services.AddAuthentication(option =>
@@ -66,34 +65,60 @@ builder.Services.AddAuthentication(option =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(swagger =>
+builder.Services.AddSwaggerGen(options =>
 {
-    swagger.SwaggerDoc("v1", new OpenApiInfo
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "Users Authentication Api",
-        Version = "v1"
-    });
-    swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
-    {
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Name = "Authorization",
-        Description = "Cabecera de autorización JWT. \r\n Introduzca ['Bearer'] [espacio] [Token]"
+        Description = "Introduzca solo el token JWT. Swagger agregara el prefijo Bearer."
     });
-    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
+        [new OpenApiSecuritySchemeReference("Bearer", document, null)] = []
+    });
+});
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
         {
-            new OpenApiSecurityScheme
+            Title = "Users Authentication Api",
+            Version = "v1",
+            Description = "API de autenticaciï¿½n de usuarios. Proporciona endpoints para el registro, inicio de sesiï¿½n y gestiï¿½n de usuarios."
+        };
+
+        // Agregar esquema Bearer JWT
+        var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+        {
+            ["Bearer"] = new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            }, new string[] {}
-        }
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                In = ParameterLocation.Header,
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                Description = "Cabecera de autorizaciï¿½n JWT. \r\n Introduzca ['Bearer'] [espacio] [Token]"
+            }
+        };
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes = securitySchemes;
+
+        var schemeRef = new OpenApiSecuritySchemeReference("Bearer", document, null);
+        var securityRequirement = new OpenApiSecurityRequirement
+        {
+            [schemeRef] = []
+        };
+        document.Security =
+        [
+            securityRequirement
+        ];
+
+        return Task.CompletedTask;
     });
 });
 
@@ -118,12 +143,8 @@ app.UseEndpoints(endpoints =>
 var consumer = app.Services.GetRequiredService<IConsumer>();
 app.UseRabbitConsumer(consumer);
 
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Users Authentication API v1"));
-
+app.MapOpenApi();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("../swagger/v1/swagger.json", "Users Authentication API v1"));
 app.UseHttpsRedirection();
-
-
-//app.MapControllers();
 
 app.Run();

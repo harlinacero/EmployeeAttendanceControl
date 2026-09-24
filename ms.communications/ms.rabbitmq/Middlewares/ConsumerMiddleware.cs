@@ -19,7 +19,7 @@ namespace ms.rabbitmq.Middlewares
         }
 
 
-        private static void OnStarted() => Consumer.Subscribe();
-        private static void OnStopping() => Consumer.Unsubscribe();
+        private static void OnStarted() => Consumer.SubscribeAsync();
+        private static void OnStopping() => Consumer.UnsubscribeAsync();
     }
 }

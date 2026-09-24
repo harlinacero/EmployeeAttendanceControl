@@ -18,7 +18,7 @@ namespace ms.attendances.api.Consumers
         private readonly IConfiguration _configuration;
         private readonly ILogger<AttendancesConsumer> _logger;
         private IConnection _connection;
-        private IModel _channel;
+        private IChannel _channel;
 
         public AttendancesConsumer(IMediator mediator, IMapper mapper, IConfiguration configuration, ILogger<AttendancesConsumer> logger)
         {
@@ -28,47 +28,51 @@ namespace ms.attendances.api.Consumers
             _logger = logger;
         }
 
-        public void Subscribe()
+        public async Task SubscribeAsync()
         {
             var factory = new ConnectionFactory()
             {
                 HostName = _configuration.GetValue<string>("Communication:EventBus:HostName")
             };
 
-            _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
+            _connection = await factory.CreateConnectionAsync();
+            _channel = await _connection.CreateChannelAsync();
 
             var queue = nameof(AttendanceStateChangedEvent);
 
             // Quee storage messages in memory, allow multi connections and not is deleted if don't have any consumer
-            _channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
-            var consumer = new EventingBasicConsumer(_channel);
-            consumer.Received += ReceivedEvent;
+            await _channel.QueueDeclareAsync(queue, durable: true, exclusive: false, autoDelete: false, null);
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            consumer.ReceivedAsync += ReceivedEvent;
 
             // Pusblish routing_key of message
-            _channel.BasicConsume(queue: queue, autoAck: true, consumer: consumer);
+            await _channel.BasicConsumeAsync(queue: queue, autoAck: true, consumer: consumer);
             _logger.LogInformation("RabbitMQ consumer subscribed to queue {Queue}", queue);
         }
 
-        private async void ReceivedEvent(object? sender, BasicDeliverEventArgs e)
+        private async Task ReceivedEvent(object? sender, BasicDeliverEventArgs e)
         {
-            if (e.RoutingKey == typeof(AttendanceStateChangedEvent).Name)
+            if (e.RoutingKey == nameof(AttendanceStateChangedEvent))
             {
                 _logger.LogInformation("Received event");
                 var message = Encoding.UTF8.GetString(e.Body.Span);
                 var attendanceStateChangedEvent = JsonSerializer.Deserialize<AttendanceStateChangedEvent>(message);
 
-                _logger.LogInformation("Send Create attendance ", attendanceStateChangedEvent);
-                var result = await _mediator.Send(new CreateAttendanceCommand(attendanceStateChangedEvent?.UserName,
-                    _mapper.Map<CreateAttendanceRequest>(attendanceStateChangedEvent)));
+                _logger.LogInformation("Create attendance {AttendanceStateChangedEvent}", attendanceStateChangedEvent);
+                var createAttendanceCommand = new CreateAttendanceCommand(attendanceStateChangedEvent?.UserName,
+                    _mapper.Map<CreateAttendanceRequest>(attendanceStateChangedEvent));
+                var result = await _mediator.Send(createAttendanceCommand);
+
+                _logger.LogInformation("Attendance updated with result: {Result}", result);
+                await Task.CompletedTask;
             }
         }
 
-        public void Unsubscribe()
+        public async Task UnsubscribeAsync()
         {
-            _channel?.Close();
+            _channel?.CloseAsync();
             _channel?.Dispose();
-            _connection?.Close();
+            _connection?.CloseAsync();
             _connection?.Dispose();
         }
     }

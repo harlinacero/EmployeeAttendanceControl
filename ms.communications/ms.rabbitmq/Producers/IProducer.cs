@@ -4,6 +4,6 @@ namespace ms.rabbitmq.Producers
 {
     public interface IProducer
     {
-        void Produce(IRabbitMqEvent rabbitMqEvent);
+        Task Produce(IRabbitMqEvent rabbitMqEvent);
     }
 }

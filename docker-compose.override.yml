@@ -47,6 +47,7 @@ services:
     container_name: ms.employees.api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
       - "ConnectionStrings:EmployeeDB=Data Source=ms.sql.employees.db; Initial Catalog=EmployeesAttendance; User ID=sa; Password=.123Pass456.; MultipleActiveResultSets=True;"
       - "Communication:EventBus:HostName=ms.rabbitmq.bus"
       - "Communication:External:AttendanceApiUrl=http://ms.attendances.api:80"
@@ -65,6 +66,7 @@ services:
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
       - "DatabaseSettings:Hostname=ms.cassandra.db"
       - "Communication:EventBus:HostName=ms.rabbitmq.bus" 
     ports:
@@ -79,6 +81,7 @@ services:
     container_name: ms.attendances.api
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
       - "ConnectionStrings:MongoDB=mongodb://ms.mongo.attendances.db:27017"
       - "ConnectionStrings:AttendanceDB=DbHistoricalAttendance"
       - "ConnectionStrings:AttendanceCollection=Attendances"

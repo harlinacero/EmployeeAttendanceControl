@@ -2,7 +2,7 @@
 {
     public interface IConsumer
     {
-        void Subscribe();
-        void Unsubscribe();
+        Task SubscribeAsync();
+        Task UnsubscribeAsync();
     }
 }

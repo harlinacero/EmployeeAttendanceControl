@@ -1,11 +1,10 @@
-using AutoMapper;
-using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using ms.employees.application.HttpComunications;
 using ms.employees.application.Mappers;
 using ms.employees.application.Queries;
+using ms.employees.application.Queries.Handlers;
 using ms.employees.domain.Repositories;
 using ms.employees.infraestucture.Data;
 using ms.employees.infraestucture.Repositories;
@@ -21,18 +20,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddScoped(typeof(IDapperContext), typeof(EmployeesDapperContext));
 builder.Services.AddScoped(typeof(IEmployeeRepository), typeof(EmployeeRepository));
-builder.Services.AddRefitClient<IAttendanceApiCommunication>().ConfigureHttpClient(c => 
+builder.Services.AddRefitClient<IAttendanceApiCommunication>().ConfigureHttpClient(c =>
     c.BaseAddress = new Uri(builder.Configuration.GetSection("Communication:External:AttendanceApiUrl")?.Value)
     );
 
-var automapperConfig = new MapperConfiguration(mapperConfig =>
-{
-    mapperConfig.AddMaps(typeof(EmployeesMapperProfile).Assembly);
-});
-IMapper mapper = automapperConfig.CreateMapper();
-builder.Services.AddSingleton(mapper);
+builder.Services.AddAutoMapper(mapperConfig => mapperConfig.AddMaps(typeof(EmployeesMapperProfile).Assembly));
 
-builder.Services.AddMediatR(typeof(GetAllEmployeesQuery).GetTypeInfo().Assembly);
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(GetAllEmployeesQueryHandler).GetTypeInfo().Assembly);
+});
 builder.Services.AddSingleton(typeof(IProducer), typeof(EventProducer));
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
@@ -57,36 +54,62 @@ builder.Services.AddAuthentication(option =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(swagger =>
+builder.Services.AddSwaggerGen(options =>
 {
-    swagger.SwaggerDoc("v1", new OpenApiInfo
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "Employees Api",
-        Version = "v1"
-    });
-    swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
-    {
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Name = "Authorization",
-        Description = "Cabecera de autorización JWT. \r\n Introduzca ['Bearer'] [espacio] [Token]"
+        Description = "Introduzca solo el token JWT. Swagger agregara el prefijo Bearer."
     });
-    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            }, new string[] {}
-        }
+        [new OpenApiSecuritySchemeReference("Bearer", document, null)] = []
     });
 });
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
+        {
+            Title = "Employees Api",
+            Version = "v1",
+            Description = "API para la gestiï¿½n de empleados y asistencia."
+        };
+
+        // Agregar esquema Bearer JWT
+        var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+        {
+            ["Bearer"] = new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                In = ParameterLocation.Header,
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                Description = "Cabecera de autorizaciï¿½n JWT. \r\n Introduzca ['Bearer'] [espacio] [Token]"
+            }
+        };
+
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes = securitySchemes;
+
+        // Requerimiento global
+        document.Security ??= [];
+        var schemeRef = new OpenApiSecuritySchemeReference("Bearer", document, null);
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [schemeRef] = []
+        });
+
+        return Task.CompletedTask;
+    });
+});
+
 
 var app = builder.Build();
 
@@ -106,8 +129,8 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 });
 
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Employees Attendance API v1"));
+app.MapOpenApi();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("../swagger/v1/swagger.json", "Employees Attendance API v1"));
 
 app.UseHttpsRedirection();
 

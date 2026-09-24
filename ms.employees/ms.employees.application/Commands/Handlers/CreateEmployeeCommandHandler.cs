@@ -32,7 +32,7 @@ namespace ms.employees.application.Commands.Handlers
                 UserName = request.UserName
             });
             _logger.LogInformation($"Employee {request.UserName} created");
-            _producer.Produce(_mapper.Map<EmployeeCreateEvent>(request));
+            await _producer.Produce(_mapper.Map<EmployeeCreateEvent>(request));
             _logger.LogInformation($"Send event {nameof(EmployeeCreateEvent)} user {request.UserName}");
             return res;
         }

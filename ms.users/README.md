@@ -49,7 +49,7 @@ Cuando `ms.employees` publica un evento de alta de empleado, `UserConsumer` lo r
 
 ## Dependencias
 
-- .NET `6.0` y ASP.NET Core.
+- .NET `10.0` y ASP.NET Core.
 - MediatR para comandos y consultas.
 - AutoMapper para convertir eventos y comandos.
 - JWT Bearer para autenticacion.

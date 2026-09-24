@@ -1,11 +1,9 @@
-using AutoMapper;
-using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using ms.attendances.api.Consumers;
 using ms.attendances.api.Mappers;
-using ms.attendances.application.Commands;
+using ms.attendances.application.Commands.Handlers;
 using ms.attendances.application.Mappers;
 using ms.attendances.domain.Repositories;
 using ms.attendances.infraestucture.Data;
@@ -21,21 +19,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.AddScoped(typeof(IAttendanceContext), typeof(AttendanceMongoContext));
 builder.Services.AddTransient(typeof(IAttendanceContext), typeof(AttendanceMongoContext));
-builder.Services.AddScoped(typeof(IAttendanceRepository), typeof(AttendanceRepository));
 builder.Services.AddTransient(typeof(IAttendanceRepository), typeof(AttendanceRepository));
 
-var automapperConfig = new MapperConfiguration(mapperConfig =>
+
+builder.Services.AddAutoMapper(mapperConfig =>
 {
     mapperConfig.AddMaps(typeof(AttendanceProfile).Assembly);
     mapperConfig.AddMaps(typeof(AttendanceMongoProfile).Assembly);
     mapperConfig.AddProfile(typeof(EventMapperProfile));
 });
-IMapper mapper = automapperConfig.CreateMapper();
-builder.Services.AddSingleton(mapper);
 
-builder.Services.AddMediatR(typeof(CreateAttendanceCommand).GetTypeInfo().Assembly);
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(CreateAttendanceCommandHandler).GetTypeInfo().Assembly);
+});
 builder.Services.AddSingleton(typeof(IConsumer), typeof(AttendancesConsumer));
 
 var privateKey = builder.Configuration.GetValue<string>("Authentication:JWT:Key");
@@ -60,34 +58,59 @@ builder.Services.AddAuthentication(option =>
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(swagger =>
+builder.Services.AddSwaggerGen(options =>
 {
-    swagger.SwaggerDoc("v1", new OpenApiInfo
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Title = "Attendances Api",
-        Version = "v1"
-    });
-    swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
-    {
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Name = "Authorization",
-        Description = "Cabecera de autorización JWT. \r\n Introduzca ['Bearer'] [espacio] [Token]"
+        Description = "Introduzca solo el token JWT. Swagger agregara el prefijo Bearer."
     });
-    swagger.AddSecurityRequirement(new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
+        [new OpenApiSecuritySchemeReference("Bearer", document, null)] = []
+    });
+});
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
         {
-            new OpenApiSecurityScheme
+            Title = "Attendances Api",
+            Version = "v1",
+            Description = "API para la gestiï¿½n de asistencia de empleados."
+        };
+
+
+        // Agregar esquema Bearer JWT
+        var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
+        {
+            ["Bearer"] = new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            }, new string[] {}
-        }
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                In = ParameterLocation.Header,
+                BearerFormat = "JWT",
+                Name = "Authorization",
+                Description = "Cabecera de autorizaciï¿½n JWT. \r\n Introduzca ['Bearer'] [espacio] [Token]"
+            }
+        };
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes = securitySchemes;
+
+        // Requerimiento global
+        document.Security ??= [];
+        var schemeRef = new OpenApiSecuritySchemeReference("Bearer", document, null);
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [schemeRef] = Array.Empty<string>().ToList()
+        });
+
+        return Task.CompletedTask;
     });
 });
 
@@ -113,8 +136,8 @@ app.UseEndpoints(endpoints =>
 var consumer = app.Services.GetRequiredService<IConsumer>();
 app.UseRabbitConsumer(consumer);
 
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Historical Attendance API v1"));
+app.MapOpenApi();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("../swagger/v1/swagger.json", "Historical Attendance API v1"));
 app.UseHttpsRedirection();
 
 app.Run();

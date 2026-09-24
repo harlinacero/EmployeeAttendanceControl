@@ -17,7 +17,7 @@ namespace ms.rabbitmq.Producers
             _logger = logger;
         }
 
-        public void Produce(IRabbitMqEvent rabbitMqEvent)
+        public async Task Produce(IRabbitMqEvent rabbitMqEvent)
         {
             ArgumentNullException.ThrowIfNull(rabbitMqEvent);
 
@@ -32,18 +32,19 @@ namespace ms.rabbitmq.Producers
                 HostName = hostName
             };
 
-            using var connection = factory.CreateConnection();
-            using var channel = connection.CreateModel();
+            using var connection = await factory.CreateConnectionAsync();
+            using var channel = await connection.CreateChannelAsync();
             var queue = rabbitMqEvent.GetType().Name;
 
             // Quee storage messages in memory, allow multi connections and not is deleted if don't have any consumer
 
-            channel.QueueDeclare(queue, durable: true, exclusive: false, autoDelete: false, null);
+            await channel.QueueDeclareAsync(queue, durable: true, exclusive: false, autoDelete: false, null);
             var body = Encoding.UTF8.GetBytes(rabbitMqEvent.Serialize());
             _logger.LogInformation($"Send event {queue}");
 
             // Pusblish routing_key of message
-            channel.BasicPublish("", queue, null, body);
+            //channel.BasicPublish("", queue, null, body);
+            await channel.BasicPublishAsync("", queue, body);
         }
     }
 }

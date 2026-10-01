@@ -1,5 +1,7 @@
 ﻿using Cassandra;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using ms.users.infraestructure.Extensions;
 
 namespace ms.users.infraestructure.Data
 {
@@ -7,12 +9,12 @@ namespace ms.users.infraestructure.Data
     {
         public Cluster ConfiguredCluster { get; set; }
 
-        public CassandraCluster(IConfiguration configuration)
+        public CassandraCluster(IOptions<DatabaseSettings> configuration)
         {
-            var hostname = configuration.GetSection("DatabaseSettings:Hostname").Value;
-            var port = configuration.GetSection("DatabaseSettings:Port").Value;
+            var hostname = configuration.Value.Hostname;
+            var port = configuration.Value.Port;
             ConfiguredCluster = Cluster.Builder().AddContactPoint(hostname)
-                                                .WithPort(int.Parse(port))
+                                                .WithPort(port)
                                                 .Build();
 
         }

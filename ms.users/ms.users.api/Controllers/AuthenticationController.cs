@@ -17,7 +17,16 @@ namespace ms.users.api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> DoLogin([FromBody]LoginCredentialsRequest loginCredentials) => 
-            Ok(await _mediator.Send(new GetUserTokenQuery(loginCredentials.UserName, loginCredentials.Password)));
+        public async Task<IActionResult> DoLogin([FromBody] LoginCredentialsRequest loginCredentials)
+        {
+            try
+            {
+                return Ok(await _mediator.Send(new GetUserTokenQuery(loginCredentials.UserName, loginCredentials.Password)));
+            }
+            catch (Exception)
+            {
+                return Unauthorized("Invalid username or password");
+            }
+        }
     }
 }

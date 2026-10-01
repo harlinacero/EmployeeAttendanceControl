@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using MediatR;
+using Microsoft.Extensions.Options;
 using ms.rabbitmq.Consumers;
 using ms.users.api.Events;
 using ms.users.application.Commands;
+using ms.users.application.Extensions;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -14,16 +16,16 @@ namespace ms.users.api.Consumers
     {
         private readonly IMediator _mediator;
         private readonly IMapper _mapper;
-        private readonly IConfiguration _configuration;
+        private readonly SettingsOptions _configuration;
         private readonly ILogger<UserConsumer> _logger;
         private IConnection _connection;
         private IChannel _channel;
 
-        public UserConsumer(IMediator mediator, IMapper mapper, IConfiguration configuration, ILogger<UserConsumer> logger)
+        public UserConsumer(IMediator mediator, IMapper mapper, IOptions<SettingsOptions> configuration, ILogger<UserConsumer> logger)
         {
             _mediator = mediator;
             _mapper = mapper;
-            _configuration = configuration;
+            _configuration = configuration.Value;
             _logger = logger;
         }
 
@@ -31,7 +33,7 @@ namespace ms.users.api.Consumers
         {
             var factory = new ConnectionFactory()
             {
-                HostName = _configuration.GetValue<string>("Communication:EventBus:HostName")
+                HostName = _configuration.Communication.EventBus.HostName,
             };
 
             _connection = await factory.CreateConnectionAsync();
@@ -50,18 +52,25 @@ namespace ms.users.api.Consumers
         }
 
         private async Task ReceivedEvent(object? sender, BasicDeliverEventArgs e)
-        {
-            if (e.RoutingKey == nameof(EmployeeCreateEvent))
+        {           
+            try
             {
-                _logger.LogInformation("Received event");
-                var message = Encoding.UTF8.GetString(e.Body.Span);
-                var employeeCreatedEvent = JsonSerializer.Deserialize<EmployeeCreateEvent>(message);
-                
-                _logger.LogInformation("Create user event received: {Message}", message);
-                var result = await _mediator.Send(_mapper.Map<CreateUserAccountCommand>(employeeCreatedEvent));
+                if (e.RoutingKey == nameof(EmployeeCreateEvent))
+                {
+                    _logger.LogInformation("Received event");
+                    var message = Encoding.UTF8.GetString(e.Body.Span);
+                    var employeeCreatedEvent = JsonSerializer.Deserialize<EmployeeCreateEvent>(message);
 
-                _logger.LogInformation("User created with result: {Result}", result);
-                await Task.CompletedTask;
+                    _logger.LogInformation("Create user event received: {Message}", message);
+                    var result = await _mediator.Send(_mapper.Map<CreateUserAccountCommand>(employeeCreatedEvent));
+
+                    _logger.LogInformation("User created with result: {Result}", result);
+                    await Task.CompletedTask;
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to deserialize message: {Message}", Encoding.UTF8.GetString(e.Body.Span));
             }
         }
 

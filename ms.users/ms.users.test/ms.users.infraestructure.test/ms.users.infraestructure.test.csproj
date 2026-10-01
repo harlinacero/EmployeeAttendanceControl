@@ -7,15 +7,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="16.2.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
-	<PackageReference Include="MediatR" Version="14.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Moq" Version="4.21.0" />
-	<PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
@@ -25,15 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Consumers\UserConsumerTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\ms.users.api\ms.users.api.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Events\" />
+    <ProjectReference Include="..\..\ms.users.infraestructure\ms.users.infraestructure.csproj" />
   </ItemGroup>
 
 </Project>

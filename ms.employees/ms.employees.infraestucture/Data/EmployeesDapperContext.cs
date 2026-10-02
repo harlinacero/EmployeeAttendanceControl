@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using ms.employees.infraestucture.Extensions;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -10,9 +12,10 @@ namespace ms.employees.infraestucture.Data
         private IDbTransaction _transaction;
         private readonly string _connectionString;
 
-        public EmployeesDapperContext(IConfiguration configuration)
+        public EmployeesDapperContext(IOptions<ConnectionStrings> configuration)
         {
-            _connectionString = configuration.GetConnectionString("EmployeeDB");
+            var settings = configuration.Value;
+            _connectionString = settings.EmployeeDB;
         }
 
         public IDbConnection Connection

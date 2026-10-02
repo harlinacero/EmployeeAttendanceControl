@@ -7,12 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddOptions<SettingsOptions>().Bind(builder.Configuration);
+builder.Services.AddOptions<ConnectionStrings>().Bind(builder.Configuration.GetSection(nameof(ConnectionStrings)));
 builder.Services.AddDataBaseExtension();
 builder.Services.AddComunicationsSettings();
-
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddOptions<SettingsOptions>().Bind(builder.Configuration);
 builder.Services.UseAuthenticationBearer();
 builder.Services.AddSwaggerOpenApi();
 var app = builder.Build();

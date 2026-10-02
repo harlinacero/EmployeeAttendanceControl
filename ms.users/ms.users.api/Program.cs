@@ -47,7 +47,7 @@ builder.Services.AddSingleton(typeof(IConsumer), typeof(UserConsumer));
 
 
 builder.Services.AddOptions<SettingsOptions>().Bind(builder.Configuration);
-builder.Services.AddOptions<DatabaseSettings>().Bind(builder.Configuration.GetSection("DatabaseSettings"));
+builder.Services.AddOptions<DatabaseSettings>().Bind(builder.Configuration.GetSection(nameof(DatabaseSettings)));
 builder.Services.UseAuthenticationBearer();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

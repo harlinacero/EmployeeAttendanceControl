@@ -1,7 +1,7 @@
 ﻿using ms.rabbitmq.Settings;
 using System.ComponentModel.DataAnnotations;
 
-namespace ms.users.application.Extensions
+namespace ms.employees.application.Extensions
 {
     public sealed class SettingsOptions
     {
@@ -11,7 +11,6 @@ namespace ms.users.application.Extensions
         [Required]
         public Communication Communication { get; set; }
     }
-
 
     public class Authentication
     {
@@ -28,10 +27,20 @@ namespace ms.users.application.Extensions
         public int ExpirationHours { get; set; }
     }
 
+
     public class Communication
     {
         [Required]
         public EventBus EventBus { get; set; }
+
+        [Required]
+        public External External { get; set; }
+    }
+
+    public class External
+    {
+        [Required]
+        public string AttendanceApiUrl { get; set; }
     }
 
 }

@@ -2,10 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using ms.users.application.Extensions;
 using System.Text;
 
-namespace ms.users.api.Extensions
+namespace ms.users.application.Extensions
 {
     public static class AuthenticationExtensions
     {

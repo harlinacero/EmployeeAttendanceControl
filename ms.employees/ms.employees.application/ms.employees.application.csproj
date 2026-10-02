@@ -1,20 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="16.2.0" />
-    <PackageReference Include="MediatR" Version="14.2.0" />
-    <PackageReference Include="Refit" Version="16.1.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="16.2.0" />
+		<PackageReference Include="MediatR" Version="14.2.0" />
+		<PackageReference Include="Refit" Version="16.1.0" />
+		<PackageReference Include="Refit.HttpClientFactory" Version="16.1.0" />
+		<PackageReference Include="Refit.Reflection" Version="16.1.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\ms.communications\ms.rabbitmq\ms.rabbitmq.csproj" />
-    <ProjectReference Include="..\ms.employees.domain\ms.employees.domain.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\ms.communications\ms.rabbitmq\ms.rabbitmq.csproj" />
+		<ProjectReference Include="..\ms.employees.domain\ms.employees.domain.csproj" />
+	</ItemGroup>
 
 </Project>

@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using RabbitMQ.Client.Events;
@@ -13,6 +12,7 @@ using ms.users.application.Commands;
 using RabbitMQ.Client;
 using Microsoft.Extensions.Options;
 using ms.users.application.Extensions;
+using ms.rabbitmq.Settings;
 
 namespace ms.users.api.test.Consumers
 {

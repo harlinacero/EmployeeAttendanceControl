@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using ms.rabbitmq.Consumers;
 using ms.rabbitmq.Middlewares;
 using ms.users.api.Consumers;
@@ -16,7 +13,6 @@ using ms.users.infraestructure.Mappings;
 using ms.users.infraestructure.Repositories;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text;
 
 [assembly: ExcludeFromCodeCoverage]
 var builder = WebApplication.CreateBuilder(args);
@@ -27,7 +23,6 @@ builder.Services.AddControllers();
 
 builder.Services.AddSingleton(typeof(CassandraUserMapping));
 
-builder.Services.AddScoped(typeof(CassandraCluster));
 builder.Services.AddTransient(typeof(CassandraCluster));
 
 builder.Services.AddTransient(typeof(IUsersContext), typeof(UsersContext));

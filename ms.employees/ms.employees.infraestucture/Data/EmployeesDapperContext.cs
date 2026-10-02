@@ -25,10 +25,10 @@ namespace ms.employees.infraestucture.Data
             }
         }
 
-        public bool IsConnectionClosed() => _connection != null && _connection.State.Equals(ConnectionState.Closed);
+        private bool IsConnectionClosed() => _connection != null && _connection.State.Equals(ConnectionState.Closed);
 
-        public bool HasOpenConnection() => !IsConnectionClosed();
-        public bool HasOpenTransaction() => _transaction != null && _transaction.Connection != null;
+        private bool HasOpenConnection() => !IsConnectionClosed();
+        private bool HasOpenTransaction() => _transaction != null && _transaction.Connection != null;
 
         public IDbTransaction BeginTransaction()
         {
@@ -36,7 +36,7 @@ namespace ms.employees.infraestucture.Data
             return _transaction;
         }
 
-        public void ClearTransaction()
+        private void ClearTransaction()
         {
             if (_transaction != null)
             {

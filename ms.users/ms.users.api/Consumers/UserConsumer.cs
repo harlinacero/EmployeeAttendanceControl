@@ -18,25 +18,26 @@ namespace ms.users.api.Consumers
         private readonly IMapper _mapper;
         private readonly SettingsOptions _configuration;
         private readonly ILogger<UserConsumer> _logger;
+        private readonly IConnectionFactory _connectionFactory;
         private IConnection _connection;
         private IChannel _channel;
 
-        public UserConsumer(IMediator mediator, IMapper mapper, IOptions<SettingsOptions> configuration, ILogger<UserConsumer> logger)
+        public UserConsumer(IMediator mediator, IMapper mapper, 
+            IOptions<SettingsOptions> configuration, ILogger<UserConsumer> logger, IConnectionFactory? connectionFactory = null)
         {
             _mediator = mediator;
             _mapper = mapper;
             _configuration = configuration.Value;
             _logger = logger;
+            _connectionFactory = connectionFactory ?? new ConnectionFactory()
+            {
+                HostName = _configuration.Communication.EventBus.HostName,
+            };
         }
 
         public async Task SubscribeAsync()
         {
-            var factory = new ConnectionFactory()
-            {
-                HostName = _configuration.Communication.EventBus.HostName,
-            };
-
-            _connection = await factory.CreateConnectionAsync();
+            _connection = await _connectionFactory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
             var queue = nameof(EmployeeCreateEvent);

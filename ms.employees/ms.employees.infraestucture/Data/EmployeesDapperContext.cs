@@ -12,10 +12,11 @@ namespace ms.employees.infraestucture.Data
         private IDbTransaction _transaction;
         private readonly string _connectionString;
 
-        public EmployeesDapperContext(IOptions<ConnectionStrings> configuration)
+        public EmployeesDapperContext(IOptions<ConnectionStrings> configuration, IDbConnection connection = null)
         {
             var settings = configuration.Value;
             _connectionString = settings.EmployeeDB;
+            _connection = connection;
         }
 
         public IDbConnection Connection

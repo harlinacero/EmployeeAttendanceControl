@@ -1,23 +1,24 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using ms.attendances.infraestucture.Extensions;
 using ms.attendances.infraestucture.MongoEntities;
 
 namespace ms.attendances.infraestucture.Data
 {
     public class AttendanceMongoContext : IAttendanceContext
     {
-        private readonly IConfiguration _configuration;
+        private readonly ConnectionStrings _connectionStrings;
         private IMongoDatabase _mongoDatabase;
 
 
-        public AttendanceMongoContext(IConfiguration configuration)
+        public AttendanceMongoContext(IOptions<ConnectionStrings> configuration)
         {
-            _configuration = configuration;
-            _mongoDatabase = new MongoClient(_configuration.GetConnectionString("MongoDB"))
-                .GetDatabase(_configuration.GetConnectionString("AttendanceDB"));
+            _connectionStrings = configuration.Value;
+            _mongoDatabase = new MongoClient(_connectionStrings.MongoDB)
+                .GetDatabase(_connectionStrings.AttendanceDB);
         }
 
         public IMongoCollection<AttendanceMongo> AttendanceCollection =>
-            _mongoDatabase.GetCollection<AttendanceMongo>(_configuration.GetConnectionString("AttendanceCollection"));
+            _mongoDatabase.GetCollection<AttendanceMongo>(_connectionStrings.AttendanceCollection);
     }
 }

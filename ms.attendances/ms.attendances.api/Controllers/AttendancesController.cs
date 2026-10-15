@@ -26,7 +26,7 @@ namespace ms.attendances.api.Controllers
         [Route("[action]")]
         public async Task<IActionResult> CreateAttendance([FromBody] CreateAttendanceRequest createAttendanceRequest)
         {
-            var userName = User.Claims.FirstOrDefault( claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
+            var userName = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
             return Ok(await _mediator.Send(new CreateAttendanceCommand(userName, createAttendanceRequest)));
         }
     }

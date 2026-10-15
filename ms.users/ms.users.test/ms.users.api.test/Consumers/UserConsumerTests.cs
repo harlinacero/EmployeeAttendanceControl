@@ -166,7 +166,7 @@ namespace ms.users.api.test.Consumers
             var method = typeof(UserConsumer).GetMethod("ReceivedEvent", BindingFlags.Instance | BindingFlags.NonPublic);
 
             // Act
-            var task = (Task)method.Invoke(consumer, new object[] { null, eventArgs });
+            var task = (Task)method.Invoke(consumer, [null, eventArgs]);
             await task;
 
             // Assert

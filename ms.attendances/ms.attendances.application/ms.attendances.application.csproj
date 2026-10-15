@@ -7,12 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="16.2.0" />
-    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="MediatR" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ms.communications\ms.rabbitmq\ms.rabbitmq.csproj" />
     <ProjectReference Include="..\ms.attendances.domain\ms.attendances.domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Extensions\" />
   </ItemGroup>
 
 </Project>

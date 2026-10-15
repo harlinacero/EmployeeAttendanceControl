@@ -7,10 +7,12 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
+COPY ["Directory.Packages.props", "./"]
 COPY ["ms.attendances/ms.attendances.api/ms.attendances.api.csproj", "ms.attendances/ms.attendances.api/"]
 COPY ["ms.attendances/ms.attendances.application/ms.attendances.application.csproj", "ms.attendances/ms.attendances.application/"]
 COPY ["ms.attendances/ms.attendances.domain/ms.attendances.domain.csproj", "ms.attendances/ms.attendances.domain/"]
 COPY ["ms.attendances/ms.attendances.infraestucture/ms.attendances.infraestucture.csproj", "ms.attendances/ms.attendances.infraestucture/"]
+COPY ["ms.communications/ms.rabbitmq/ms.rabbitmq.csproj", "ms.communications/ms.rabbitmq/"]
 RUN dotnet restore "ms.attendances/ms.attendances.api/ms.attendances.api.csproj"
 COPY . .
 WORKDIR "/src/ms.attendances/ms.attendances.api"

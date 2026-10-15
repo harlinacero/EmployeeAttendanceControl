@@ -1,12 +1,6 @@
-﻿using Dapper;
-using Moq;
-using Moq.Dapper;
-using ms.employees.domain.Entities;
+﻿using Moq;
 using ms.employees.infraestucture.Data;
-using ms.employees.infraestucture.Repositories;
 using System.Data;
-using System.Data.Common;
-using Xunit;
 
 namespace ms.employees.infraestucture.test.Repositories
 {

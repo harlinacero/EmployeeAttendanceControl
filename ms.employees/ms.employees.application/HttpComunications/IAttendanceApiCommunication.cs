@@ -5,7 +5,7 @@ namespace ms.employees.application.HttpComunications
 {
     public interface IAttendanceApiCommunication
     {
-        [Get("/Attendances/GetAllAttendances")]
+        [Get("/Attendances")]
         Task<IEnumerable<AttendanceApiCommunicationResponse>> GetAllAttendances(string userName, [Header("Authorization")] string token);
     }
 }

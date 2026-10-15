@@ -28,7 +28,7 @@ namespace ms.users.api.test.Controllers
             var controller = new UserController(_mediatorMock.Object);
 
             //act
-            var result = await controller.GetAllUsers();
+            var result = await controller.Users();
 
             // Assert
             var okResult = Assert.IsType<Microsoft.AspNetCore.Mvc.OkObjectResult>(result);
@@ -47,7 +47,7 @@ namespace ms.users.api.test.Controllers
                 .ReturnsAsync(userName);
             var controller = new UserController(_mediatorMock.Object);
             //act
-            var result = await controller.CreateAccount(accountRequest);
+            var result = await controller.Account(accountRequest);
             // Assert
             var okResult = Assert.IsType<Microsoft.AspNetCore.Mvc.OkObjectResult>(result);
             var userResponse = Assert.IsType<string>(okResult.Value);

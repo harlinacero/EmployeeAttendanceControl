@@ -1,53 +1,55 @@
 # ms.communications
 
-Biblioteca compartida de comunicacion entre microservicios. Actualmente contiene la implementacion de eventos y transporte RabbitMQ.
+Shared communication library between microservices. It currently contains the RabbitMQ events and transport implementation.
 
-## Estructura
+## Structure
 
-El proyecto principal es `ms.rabbitmq` y se organiza en:
+The main project is `ms.rabbitmq` and is organized into:
 
-- `Events`: contratos `IRabbitMqEvent` y `EventBase` para eventos serializables.
-- `Producers`: `IProducer` y `EventProducer` para publicar mensajes.
-- `Consumers`: `IConsumer`, contrato de suscripcion y cancelacion.
-- `Middlewares`: `UseRabbitConsumer`, que conecta el ciclo de vida de ASP.NET Core con `Subscribe` y `Unsubscribe`.
+- `Events`: `IRabbitMqEvent` and `EventBase` contracts for serializable events.
+- `Producers`: `IProducer` and `EventProducer` for publishing messages.
+- `Consumers`: `IConsumer`, subscription and cancellation contract.
+- `Middlewares`: `UseRabbitConsumer`, which connects the ASP.NET Core lifecycle to `Subscribe` and `Unsubscribe`.
 
-## Modelo de comunicacion
+## Communication model
 
-La implementacion usa colas RabbitMQ directamente, sin exchanges personalizados:
+The implementation uses RabbitMQ queues directly, without custom exchanges:
 
-1. El producer obtiene el nombre del tipo del evento, por ejemplo `EmployeeCreateEvent`.
-2. Declara una cola durable con ese nombre.
-3. Serializa el evento como JSON.
-4. Publica en el exchange por defecto (`""`) usando la cola como routing key.
-5. El consumer declara la misma cola y consume sus mensajes.
+1. The producer gets the event type's name, e.g. `EmployeeCreateEvent`.
+2. It declares a durable queue with that name.
+3. It serializes the event as JSON.
+4. It publishes to the default exchange (`""`) using the queue as the routing key.
+5. The consumer declares the same queue and consumes its messages.
 
-RabbitMQ se ejecuta en Docker como `ms.rabbitmq.bus`, con AMQP en el puerto `5672` y la interfaz de administracion en `http://localhost:15672`.
+RabbitMQ runs in Docker as `ms.rabbitmq.bus`, with AMQP on port `5672` and the management UI at `http://localhost:15672`.
 
-## Eventos usados
+## Events used
 
 ### `EmployeeCreateEvent`
 
-Publicado por `ms.employees` y consumido por `ms.users`. Se utiliza para crear la cuenta Cassandra asociada al empleado.
+Published by `ms.employees` and consumed by `ms.users`. Used to create the Cassandra account associated with the employee.
 
 ### `AttendanceStateChangedEvent`
 
-Publicado por `ms.employees` y consumido por `ms.attendances`. Se utiliza para registrar el cambio de asistencia en MongoDB.
+Published by `ms.employees` and consumed by `ms.attendances`. Used to record the attendance change in MongoDB.
 
-## Dependencias
+## Dependencies
 
-El proyecto `ms.rabbitmq` usa:
+The `ms.rabbitmq` project uses:
 
-- .NET `6.0`.
-- `RabbitMQ.Client` `6.5.0`.
-- `Microsoft.Extensions.Configuration` para obtener el hostname.
-- `Microsoft.Extensions.Hosting` para integrarse con el ciclo de vida de la API.
-- `Microsoft.AspNetCore.Http.Abstractions` para el middleware.
+- .NET `10.0`.
+- `RabbitMQ.Client`.
+- `Microsoft.Extensions.Configuration` to obtain the hostname.
+- `Microsoft.Extensions.Hosting` to integrate with the API lifecycle.
+- `Microsoft.AspNetCore.Http.Abstractions` for the middleware.
 
-No es una API independiente ni contiene un contenedor propio. Se referencia como proyecto desde `ms.users`, `ms.employees` y `ms.attendances`.
+Package versions are managed centrally via `Directory.Packages.props` at the repository root (NuGet Central Package Management).
 
-## Configuracion
+It is not a standalone API and does not have its own container. It is referenced as a project from `ms.users`, `ms.employees`, and `ms.attendances`.
 
-Cada servicio consumidor o productor debe definir:
+## Configuration
+
+Each consuming or producing service must define:
 
 ```json
 {
@@ -59,4 +61,4 @@ Cada servicio consumidor o productor debe definir:
 }
 ```
 
-En ejecucion local fuera de Docker el hostname puede ser `localhost`, siempre que RabbitMQ este publicado en el equipo.
+This setting is bound via the `IOptions` pattern (`CommunicationConfigExtension`) in the consuming services. When running locally outside of Docker, the hostname can be `localhost`, as long as RabbitMQ is published on the machine.

@@ -1,63 +1,79 @@
 # ms.employees
 
-Servicio de empleados. Mantiene la informacion laboral en SQL Server, expone operaciones administrativas y coordina el estado de asistencia con los servicios de usuarios y asistencias.
+Employee service. Keeps employment information in SQL Server, exposes administrative operations, and coordinates attendance state with the users and attendances services.
 
-## Responsabilidad
+## Responsibility
 
-La solucion esta dividida en cuatro proyectos:
+The solution is split into four projects:
 
-- `ms.employees.api`: API HTTP, JWT, Swagger y configuracion de Refit/RabbitMQ.
-- `ms.employees.application`: comandos, consultas, handlers MediatR, eventos y comunicacion HTTP.
-- `ms.employees.domain`: entidad `Employee` y contratos de repositorio.
-- `ms.employees.infraestucture`: contexto Dapper y consultas SQL Server.
+- `ms.employees.api`: HTTP API, JWT, Swagger, and Refit/RabbitMQ configuration.
+- `ms.employees.application`: commands, queries, MediatR handlers, events, and HTTP communication.
+- `ms.employees.domain`: `Employee` entity and repository contracts.
+- `ms.employees.infraestucture`: Dapper context and SQL Server queries.
 
 ## API
 
-En desarrollo se expone por `http://localhost:9010`.
+In development it is exposed at `http://localhost:9010`.
 
-| Metodo | Ruta                                            | Autorizacion | Funcion                                                    |
-| ------ | ----------------------------------------------- | ------------ | ---------------------------------------------------------- |
-| `GET`  | `/Employees/GetAllEmployees`                    | `admin`      | Devuelve todos los empleados.                              |
-| `POST` | `/Employees/CreateEmployee`                     | `admin`      | Crea un empleado y publica su evento de alta.              |
-| `PUT`  | `/Employees/UpdateAttendanceState/{attendance}` | JWT          | Actualiza el estado de asistencia del usuario autenticado. |
+| Method | Route                                            | Authorization | Function                                                   |
+| ------ | ----------------------------------------------- | -------------- | ------------------------------------------------------------ |
+| `GET`  | `/Employees/GetAllEmployees`                    | `admin`        | Returns all employees.                                       |
+| `POST` | `/Employees/CreateEmployee`                     | `admin`        | Creates an employee and publishes its creation event.        |
+| `PUT`  | `/Employees/UpdateAttendanceState/{attendance}` | JWT            | Updates the attendance state of the authenticated user.      |
 
-`CreateEmployee` recibe `UserName`, `FirstName`, `LastName`, `Password` y `Role`. `UpdateAttendanceState` recibe las notas en el cuerpo y obtiene el usuario desde el claim `NameIdentifier` del JWT.
+`CreateEmployee` receives `UserName`, `FirstName`, `LastName`, `Password`, and `Role`. `UpdateAttendanceState` receives the notes in the body and obtains the user from the `NameIdentifier` claim of the JWT.
 
 ## SQL Server
 
-La API usa Dapper y `System.Data.SqlClient`. En Docker la conexion apunta a `ms.sql.employees.db:1433`, con la base `EmployeesAttendance` y el usuario `sa`.
+The API uses Dapper and `System.Data.SqlClient`. In Docker, the connection points to `ms.sql.employees.db:1433`, with the `EmployeesAttendance` database and the `sa` user. The connection string is bound via the `IOptions` pattern (`EmployeesDapperContext`).
 
-El archivo `initsqldatabase.sql`, ejecutado por la imagen personalizada de SQL Server, crea la base, la tabla `dbo.Employee` y el registro inicial. Los archivos se conservan en el volumen Docker `sqlserver_data`.
+The `initsqldatabase.sql` file, run by the custom SQL Server image, creates the database, the `dbo.Employee` table, and the initial record. The files are kept in the `sqlserver_data` Docker volume.
 
-## Comunicacion con otros servicios
+## Communication with other services
 
-### Refit hacia ms.attendances
+### Refit towards ms.attendances
 
-Al actualizar la asistencia, el handler llama a:
+When updating attendance, the handler calls:
 
 ```text
 GET http://ms.attendances.api:80/Attendances/GetAllAttendances?userName={userName}
 ```
 
-Usa el header `Authorization` recibido en la peticion. El numero de asistencias se incorpora a las notas guardadas en SQL Server.
+It uses the `Authorization` header received in the request. The number of attendances is included in the notes saved in SQL Server.
 
-### Eventos RabbitMQ
+### RabbitMQ events
 
-- Publica `EmployeeCreateEvent` al crear un empleado. `ms.users.api` consume este evento para crear la cuenta de usuario.
-- Publica `AttendanceStateChangedEvent` al actualizar el estado de asistencia. `ms.attendances.api` consume este evento para registrar la asistencia en MongoDB.
+- Publishes `EmployeeCreateEvent` when an employee is created. `ms.users.api` consumes this event to create the user account.
+- Publishes `AttendanceStateChangedEvent` when the attendance state is updated. `ms.attendances.api` consumes this event to record the attendance in MongoDB.
 
-El host de RabbitMQ se configura con `Communication:EventBus:HostName`; en Docker es `ms.rabbitmq.bus`.
+The RabbitMQ host is configured via `Communication:EventBus:HostName`; in Docker it is `ms.rabbitmq.bus`.
 
-## Dependencias
+## Dependencies
 
-- .NET `6.0` y ASP.NET Core.
-- MediatR, AutoMapper y JWT Bearer.
-- Dapper y `System.Data.SqlClient` para SQL Server.
-- Refit para la llamada HTTP a `ms.attendances.api`.
-- RabbitMQ.Client mediante `ms.communications/ms.rabbitmq`.
-- Swashbuckle para Swagger.
+- .NET `10.0` and ASP.NET Core.
+- MediatR, AutoMapper, and JWT Bearer.
+- Dapper and `System.Data.SqlClient` for SQL Server.
+- Refit for the HTTP call to `ms.attendances.api`.
+- RabbitMQ.Client via `ms.communications/ms.rabbitmq`.
+- Swashbuckle for Swagger.
 
-## Ejecucion
+Package versions are managed centrally via `Directory.Packages.props` at the repository root (NuGet Central Package Management).
+
+## Tests
+
+The `ms.employees.test` folder contains xUnit test projects, one per layer:
+
+- `ms.employees.api.test`
+- `ms.employees.application.test`
+- `ms.employees.infraestucture.test`
+
+They use `xunit`, `Moq`, and `coverlet.collector`. Run them with:
+
+```powershell
+dotnet test ms.employees
+```
+
+## Running
 
 ```powershell
 docker compose up -d --build ms.sql.employees.db ms.rabbitmq.bus ms.attendances.api ms.employees.api

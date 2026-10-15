@@ -1,33 +1,33 @@
 # ms.users
 
-Servicio de usuarios y autenticacion del sistema de control de asistencia.
+User and authentication service for the attendance control system.
 
-## Responsabilidad
+## Responsibility
 
-`ms.users` administra las cuentas que pueden autenticarse y emite tokens JWT. Tambien permite consultar usuarios y crear cuentas nuevas para operaciones administrativas.
+`ms.users` manages the accounts that can authenticate and issues JWT tokens. It also allows querying users and creating new accounts for administrative operations.
 
-La solucion esta dividida en cuatro proyectos:
+The solution is split into four projects:
 
-- `ms.users.api`: API HTTP, autenticacion JWT, Swagger y consumidor RabbitMQ.
-- `ms.users.application`: comandos, consultas, handlers MediatR, DTOs y mapeos.
-- `ms.users.domain`: entidad `User` e interfaz `IUserRepository`.
-- `ms.users.infraestructure`: conexion y repositorio de Cassandra.
+- `ms.users.api`: HTTP API, JWT authentication, Swagger, and RabbitMQ consumer.
+- `ms.users.application`: commands, queries, MediatR handlers, DTOs, and mappings.
+- `ms.users.domain`: `User` entity and `IUserRepository` interface.
+- `ms.users.infraestructure`: Cassandra connection and repository.
 
 ## API
 
-La API se expone en el contenedor por el puerto `80` y, en desarrollo, por `http://localhost:9009`.
+The API is exposed in the container on port `80` and, in development, at `http://localhost:9009`.
 
-| Metodo | Ruta              | Autorizacion | Funcion                                              |
-| ------ | ----------------- | ------------ | ---------------------------------------------------- |
-| `POST` | `/Authentication` | Publica      | Valida usuario y password y devuelve un JWT.         |
-| `GET`  | `/User`           | `admin`      | Devuelve todos los usuarios.                         |
-| `POST` | `/User`           | `admin`      | Crea una cuenta con `UserName`, `Password` y `Role`. |
+| Method | Route             | Authorization | Function                                               |
+| ------ | ----------------- | -------------- | ------------------------------------------------------- |
+| `POST` | `/Authentication` | Public         | Validates the username and password and returns a JWT.  |
+| `GET`  | `/User`           | `admin`        | Returns all users.                                       |
+| `POST` | `/User`           | `admin`        | Creates an account with `UserName`, `Password`, and `Role`. |
 
-El token incluye el nombre de usuario y el rol. Las APIs de empleados y asistencias validan tokens firmados con la misma clave JWT.
+The token includes the username and role. The employees and attendances APIs validate tokens signed with the same JWT key.
 
 ## Cassandra
 
-La configuracion se encuentra bajo `DatabaseSettings`:
+The configuration is found under `DatabaseSettings` and bound via the `IOptions` pattern (`CassandraCluster`, `UsersContext`):
 
 ```json
 {
@@ -37,28 +37,44 @@ La configuracion se encuentra bajo `DatabaseSettings`:
 }
 ```
 
-La imagen personalizada de Cassandra ejecuta `cassandra/init.cql` al iniciar. El script crea de forma idempotente el keyspace `kusers`, la tabla `user` y el usuario inicial `admin` con password `1234` y rol `admin`.
+The custom Cassandra image runs `cassandra/init.cql` on startup. The script idempotently creates the `kusers` keyspace, the `user` table, and the initial `admin` user with password `1234` and role `admin`.
 
-El servicio usa `CassandraCSharpDriver` y `Cassandra.Mapping`. La entidad `User` se almacena en `kusers.user` con las columnas `user_username`, `user_pasword` y `user_role`.
+The service uses `CassandraCSharpDriver` and `Cassandra.Mapping`. The `User` entity is stored in `kusers.user` with the columns `user_username`, `user_pasword`, and `user_role`.
 
 ## RabbitMQ
 
-`ms.users.api` consume la cola `EmployeeCreateEvent` desde el host configurado en `Communication:EventBus:HostName`.
+`ms.users.api` consumes the `EmployeeCreateEvent` queue from the host configured in `Communication:EventBus:HostName`.
 
-Cuando `ms.employees` publica un evento de alta de empleado, `UserConsumer` lo recibe y ejecuta `CreateUserAccountCommand` para crear el usuario correspondiente en Cassandra.
+When `ms.employees` publishes an employee creation event, `UserConsumer` receives it and executes `CreateUserAccountCommand` to create the corresponding user in Cassandra.
 
-## Dependencias
+## Dependencies
 
-- .NET `10.0` y ASP.NET Core.
-- MediatR para comandos y consultas.
-- AutoMapper para convertir eventos y comandos.
-- JWT Bearer para autenticacion.
-- `CassandraCSharpDriver` y `Cassandra.Mapping` para persistencia.
-- RabbitMQ.Client para el consumidor de eventos.
-- Swashbuckle para Swagger.
-- `ms.users.application`, `ms.users.infraestructure`, `ms.users.domain` y `ms.communications/ms.rabbitmq`.
+- .NET `10.0` and ASP.NET Core.
+- MediatR for commands and queries.
+- AutoMapper to convert events and commands.
+- JWT Bearer for authentication.
+- `CassandraCSharpDriver` and `Cassandra.Mapping` for persistence.
+- RabbitMQ.Client for the event consumer.
+- Swashbuckle for Swagger.
+- `ms.users.application`, `ms.users.infraestructure`, `ms.users.domain`, and `ms.communications/ms.rabbitmq`.
 
-## Ejecucion
+Package versions are managed centrally via `Directory.Packages.props` at the repository root (NuGet Central Package Management).
+
+## Tests
+
+The `ms.users.test` folder contains xUnit test projects, one per layer:
+
+- `ms.users.api.test`
+- `ms.users.application.test`
+- `ms.users.infraestructure.test`
+
+They use `xunit`, `Moq`, and `coverlet.collector`. Run them with:
+
+```powershell
+dotnet test ms.users
+```
+
+## Running
 
 ```powershell
 docker compose up -d --build ms.cassandra.db ms.rabbitmq.bus ms.users.api

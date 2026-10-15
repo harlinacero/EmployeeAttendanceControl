@@ -1,30 +1,30 @@
 # ms.attendances
 
-Servicio de historico de asistencias. Expone consultas y altas de asistencias y persiste los registros en MongoDB.
+Attendance history service. Exposes queries and creation of attendances and persists the records in MongoDB.
 
-## Responsabilidad
+## Responsibility
 
-La solucion esta dividida en cuatro proyectos:
+The solution is split into four projects:
 
-- `ms.attendances.api`: API HTTP, JWT, Swagger y consumidor RabbitMQ.
-- `ms.attendances.application`: comandos, consultas, handlers y DTOs.
-- `ms.attendances.domain`: entidad `AttendanceRecord` y contrato de repositorio.
-- `ms.attendances.infraestucture`: contexto, mapeos y repositorio MongoDB.
+- `ms.attendances.api`: HTTP API, JWT, Swagger, and RabbitMQ consumer.
+- `ms.attendances.application`: commands, queries, handlers, and DTOs.
+- `ms.attendances.domain`: `AttendanceRecord` entity and repository contract.
+- `ms.attendances.infraestucture`: context, mappings, and MongoDB repository.
 
 ## API
 
-En desarrollo se expone por `http://localhost:9020`.
+In development it is exposed at `http://localhost:9020`.
 
-| Metodo | Ruta                                                 | Autorizacion | Funcion                                              |
-| ------ | ---------------------------------------------------- | ------------ | ---------------------------------------------------- |
-| `GET`  | `/Attendances/GetAllAttendances?userName={userName}` | JWT          | Devuelve el historico del usuario.                   |
-| `POST` | `/Attendances/CreateAttendance`                      | JWT          | Registra una asistencia para el usuario autenticado. |
+| Method | Route                                                | Authorization | Function                                         |
+| ------ | ---------------------------------------------------- | -------------- | ------------------------------------------------- |
+| `GET`  | `/Attendances/GetAllAttendances?userName={userName}` | JWT            | Returns the user's history.                       |
+| `POST` | `/Attendances/CreateAttendance`                      | JWT            | Records an attendance for the authenticated user. |
 
-`CreateAttendance` obtiene el nombre de usuario del claim `NameIdentifier` y recibe un `CreateAttendanceRequest` con los datos de la asistencia.
+`CreateAttendance` obtains the username from the `NameIdentifier` claim and receives a `CreateAttendanceRequest` with the attendance data.
 
 ## MongoDB
 
-La conexion en Docker se configura asi:
+The Docker connection is configured as follows:
 
 ```text
 MongoDB: mongodb://ms.mongo.attendances.db:27017
@@ -32,28 +32,44 @@ Database: DbHistoricalAttendance
 Collection: Attendances
 ```
 
-El servicio usa `MongoDB.Driver`. La coleccion se obtiene desde la configuracion y los datos se conservan en el volumen Docker `mongodb_data`.
+The service uses `MongoDB.Driver`. The collection is obtained from configuration (bound via the `IOptions` pattern in `AttendanceMongoContext`), and the data is kept in the `mongodb_data` Docker volume.
 
 ## RabbitMQ
 
-`AttendancesConsumer` consume la cola `AttendanceStateChangedEvent` desde `ms.rabbitmq.bus`.
+`AttendancesConsumer` consumes the `AttendanceStateChangedEvent` queue from `ms.rabbitmq.bus`.
 
-Cuando `ms.employees.api` cambia el estado de asistencia, publica ese evento. El consumidor lo transforma en `CreateAttendanceCommand` y guarda el registro en MongoDB.
+When `ms.employees.api` changes the attendance state, it publishes that event. The consumer transforms it into a `CreateAttendanceCommand` and saves the record in MongoDB.
 
-## Seguridad
+## Security
 
-Todos los endpoints de asistencias requieren un JWT valido. La clave y la duracion del token se configuran en `Authentication:JWT` y deben coincidir con las APIs que emiten y validan los tokens.
+All attendance endpoints require a valid JWT. The key and token lifetime are configured under `Authentication:JWT` and must match the APIs that issue and validate the tokens.
 
-## Dependencias
+## Dependencies
 
-- .NET `6.0` y ASP.NET Core.
-- MediatR y AutoMapper.
-- JWT Bearer para proteger los endpoints.
-- MongoDB.Driver para persistencia.
-- RabbitMQ.Client mediante `ms.communications/ms.rabbitmq`.
-- Swashbuckle para Swagger.
+- .NET `10.0` and ASP.NET Core.
+- MediatR and AutoMapper.
+- JWT Bearer to protect the endpoints.
+- MongoDB.Driver for persistence.
+- RabbitMQ.Client via `ms.communications/ms.rabbitmq`.
+- Swashbuckle for Swagger.
 
-## Ejecucion
+Package versions are managed centrally via `Directory.Packages.props` at the repository root (NuGet Central Package Management).
+
+## Tests
+
+The `ms-attendances.test` folder contains xUnit test projects, one per layer:
+
+- `ms-attendances.api.test`
+- `ms.attendances.application.test`
+- `ms.attendances.infraestucture.test`
+
+They use `xunit`, `Moq`, and `coverlet.collector`. Run them with:
+
+```powershell
+dotnet test ms.attendances
+```
+
+## Running
 
 ```powershell
 docker compose up -d --build ms.mongo.attendances.db ms.rabbitmq.bus ms.attendances.api

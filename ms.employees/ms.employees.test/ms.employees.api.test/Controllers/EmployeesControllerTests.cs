@@ -32,7 +32,7 @@ namespace ms.employees.api.test.Controllers
             var controller = new EmployeesController(_mediatorMock.Object);
             
             // Act
-            var result = await controller.GetAllEmployees();
+            var result = await controller.Employees();
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var returnedEmployeeResponses = Assert.IsType<IEnumerable<EmployeeResponse>>(okResult.Value, exactMatch: false);
@@ -62,7 +62,7 @@ namespace ms.employees.api.test.Controllers
             var controller = new EmployeesController(_mediatorMock.Object);
             
             // Act
-            var result = await controller.CreateEmployee(createEmployeeRequest);
+            var result = await controller.Employee(createEmployeeRequest);
             
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -91,7 +91,7 @@ namespace ms.employees.api.test.Controllers
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
             // Act
-            var result = await controller.UpdateAttendanceState(attendance, notes);
+            var result = await controller.AttendanceState(attendance, notes);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

@@ -21,20 +21,18 @@ namespace ms.employees.api.Controllers
 
         [Authorize(Roles = "admin")]
         [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetAllEmployees()
+        public async Task<IActionResult> Employees()
             => Ok(await _mediator.Send(new GetAllEmployeesQuery()));
 
         [Authorize(Roles = "admin")]
         [HttpPost]
-        [Route("[action]")]
-        public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
+        public async Task<IActionResult> Employee([FromBody] CreateEmployeeRequest request)
             => Ok(await _mediator.Send(new CreateEmployeeCommand(request.UserName, request.FirstName, request.LastName, request.Password, request.Role)));
 
         [Authorize]
         [HttpPut]
         [Route("[action]/{attendance}")]
-        public async Task<IActionResult> UpdateAttendanceState(bool attendance, [FromBody] string notes)
+        public async Task<IActionResult> AttendanceState(bool attendance, [FromBody] string notes)
         {
             var username = User.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier)?.Value;
             return Ok(await _mediator.Send(new UpdateAttendanceStateCommand(username, attendance, notes, Request.Headers["Authorization"].ToString())));

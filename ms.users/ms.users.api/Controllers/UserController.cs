@@ -20,10 +20,10 @@ namespace ms.users.api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllUsers() => Ok(await _mediator.Send(new GetAllUsersQuery()));
+        public async Task<IActionResult> Users() => Ok(await _mediator.Send(new GetAllUsersQuery()));
 
         [HttpPost]
-        public async Task<IActionResult> CreateAccount([FromBody] AccountRequest account) =>
+        public async Task<IActionResult> Account([FromBody] AccountRequest account) =>
             Ok(await _mediator.Send(new CreateUserAccountCommand(account.UserName, account.Password, account.Role)));
     }
 }

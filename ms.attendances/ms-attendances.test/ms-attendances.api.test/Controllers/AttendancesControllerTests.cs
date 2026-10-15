@@ -37,7 +37,7 @@ namespace ms_attendances.api.test.Controllers
                 .ReturnsAsync(new List<AttendanceResponse>());
             var controller = new AttendancesController(_mediatorMock.Object);
             // Act
-            var result = await controller.GetAllAttendances(userName);
+            var result = await controller.Attendances(userName);
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.IsType<List<AttendanceResponse>>(okResult.Value);
@@ -70,7 +70,7 @@ namespace ms_attendances.api.test.Controllers
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
             
             // Act
-            var result = await controller.CreateAttendance(createAttendanceRequest);
+            var result = await controller.Attendance(createAttendanceRequest);
             
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

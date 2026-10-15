@@ -1,40 +1,44 @@
 # EmployeeAttendanceControl
 
-Sistema distribuido para gestionar empleados, usuarios y registros históricos de asistencia.
+Distributed system for managing employees, users, and historical attendance records.
 
-## Arquitectura general
+## General architecture
 
-El proyecto está organizado como una solución de microservicios .NET 6. Cada servicio tiene sus propias responsabilidades y almacenamiento, mientras que RabbitMQ permite propagar eventos entre ellos.
+The project is organized as a .NET 10 microservices solution. Each service has its own responsibilities and storage, while RabbitMQ propagates events between them.
 
-### Componentes
+### Components
 
-- **ms.users**: autenticación, usuarios y emisión de tokens JWT. Usa Cassandra.
-- **ms.employees**: gestión de empleados y estado actual de asistencia. Usa SQL Server.
-- **ms.attendances**: histórico de asistencias. Usa MongoDB.
-- **ms.communications**: biblioteca compartida para publicar y consumir eventos RabbitMQ.
-- **RabbitMQ**: bus de mensajes para comunicación asíncrona.
-- **SQL Server, Cassandra y MongoDB**: almacenamientos especializados por servicio.
+- **ms.users**: authentication, users, and JWT token issuance. Uses Cassandra.
+- **ms.employees**: employee management and current attendance state. Uses SQL Server.
+- **ms.attendances**: attendance history. Uses MongoDB.
+- **ms.communications**: shared library for publishing and consuming RabbitMQ events.
+- **RabbitMQ**: message bus for asynchronous communication.
+- **SQL Server, Cassandra, and MongoDB**: storage specialized per service.
 
-Cada API se divide internamente en capas `api`, `application`, `domain` e `infraestructure` cuando necesita persistencia. Las APIs exponen HTTP y Swagger, y usan JWT para autenticación y autorización.
+Each API is internally split into `api`, `application`, `domain`, and `infraestructure` layers when it needs persistence. The APIs expose HTTP and Swagger, and use JWT for authentication and authorization.
 
-### Diagrama de componentes
+### Central package management
+
+The solution uses NuGet Central Package Management (`Directory.Packages.props` at the repository root) to pin a single version per package across all projects. Each `.csproj` references packages without a version, and the actual version is resolved from this central file.
+
+### Component diagram
 
 ```mermaid
 flowchart TB
-	Client[Cliente HTTP / Swagger]
+	Client[HTTP Client / Swagger]
 
-	subgraph Services[Microservicios]
-		Users[ms.users.api\nAutenticación y usuarios]
-		Employees[ms.employees.api\nEmpleados y estado actual]
-		Attendances[ms.attendances.api\nHistórico de asistencias]
-		Communications[ms.communications\nBiblioteca RabbitMQ]
+	subgraph Services[Microservices]
+		Users[ms.users.api\nAuthentication and users]
+		Employees[ms.employees.api\nEmployees and current state]
+		Attendances[ms.attendances.api\nAttendance history]
+		Communications[ms.communications\nRabbitMQ library]
 	end
 
-	subgraph Messaging[Mensajería]
+	subgraph Messaging[Messaging]
 		Rabbit[RabbitMQ\nms.rabbitmq.bus]
 	end
 
-	subgraph Data[Persistencia]
+	subgraph Data[Persistence]
 		Cassandra[(Cassandra\nkusers.user)]
 		Sql[(SQL Server\nEmployeesAttendance.Employee)]
 		Mongo[(MongoDB\nDbHistoricalAttendance.Attendances)]
@@ -44,9 +48,9 @@ flowchart TB
 	Client -->|GET/POST/PUT Employees| Employees
 	Client -->|GET/POST Attendances| Attendances
 
-	Users -->|Lee y crea usuarios| Cassandra
-	Employees -->|Lee y actualiza empleados| Sql
-	Attendances -->|Lee y guarda asistencias| Mongo
+	Users -->|Reads and creates users| Cassandra
+	Employees -->|Reads and updates employees| Sql
+	Attendances -->|Reads and saves attendances| Mongo
 
 	Users -.-> Communications
 	Employees -.-> Communications
@@ -57,30 +61,30 @@ flowchart TB
 	Rabbit -->|EmployeeCreateEvent| Users
 	Employees -->|AttendanceStateChangedEvent| Rabbit
 	Rabbit -->|AttendanceStateChangedEvent| Attendances
-	Employees -->|Refit HTTP GET de asistencias| Attendances
+	Employees -->|Refit HTTP GET for attendances| Attendances
 ```
 
-### Comunicación entre servicios
+### Communication between services
 
-La comunicación síncrona se realiza mediante HTTP. `ms.employees` consulta `ms.attendances` con Refit antes de actualizar el estado de un empleado.
+Synchronous communication is done over HTTP. `ms.employees` queries `ms.attendances` with Refit before updating an employee's state.
 
-La comunicación asíncrona usa RabbitMQ y colas durables:
+Asynchronous communication uses RabbitMQ and durable queues:
 
-| Evento                        | Publica        | Consume          | Propósito                                        |
-| ----------------------------- | -------------- | ---------------- | ------------------------------------------------ |
-| `EmployeeCreateEvent`         | `ms.employees` | `ms.users`       | Crear la cuenta de usuario asociada al empleado. |
-| `AttendanceStateChangedEvent` | `ms.employees` | `ms.attendances` | Guardar el cambio de asistencia en el histórico. |
+| Event                          | Publishes       | Consumes          | Purpose                                            |
+| ------------------------------- | -------------- | ---------------- | --------------------------------------------------- |
+| `EmployeeCreateEvent`          | `ms.employees` | `ms.users`        | Create the user account associated with the employee. |
+| `AttendanceStateChangedEvent`  | `ms.employees` | `ms.attendances`  | Save the attendance change in the history.           |
 
-Los servicios se conectan a RabbitMQ mediante el nombre DNS `ms.rabbitmq.bus` dentro de Docker. El archivo `docker-compose.override.yml` sobrescribe la configuración de `appsettings.json` mediante variables de entorno.
+Services connect to RabbitMQ through the DNS name `ms.rabbitmq.bus` inside Docker. The `docker-compose.override.yml` file overrides `appsettings.json` configuration via environment variables.
 
-### Diagrama de secuencia
+### Sequence diagram
 
-El siguiente flujo resume autenticación, creación de empleados y actualización de asistencia:
+The following flow summarizes authentication, employee creation, and attendance update:
 
 ```mermaid
 sequenceDiagram
 	autonumber
-	actor Client as Cliente
+	actor Client as Client
 	participant Users as ms.users.api
 	participant Cassandra as Cassandra
 	participant Employees as ms.employees.api
@@ -89,137 +93,137 @@ sequenceDiagram
 	participant Attendances as ms.attendances.api
 	participant Mongo as MongoDB
 
-	Client->>Users: POST /Authentication\nusuario y password
-	Users->>Cassandra: Buscar usuario en kusers.user
-	Cassandra-->>Users: Usuario y rol
+	Client->>Users: POST /Authentication\nusername and password
+	Users->>Cassandra: Look up user in kusers.user
+	Cassandra-->>Users: User and role
 	Users-->>Client: JWT
 
-	Client->>Employees: POST /Employees/CreateEmployee\nJWT + datos del empleado
-	Employees->>SQL: Insertar empleado
-	SQL-->>Employees: Empleado creado
-	Employees->>Rabbit: Publicar EmployeeCreateEvent
-	Rabbit-->>Users: Entregar evento
-	Users->>Cassandra: Crear usuario asociado
-	Cassandra-->>Users: Cuenta creada
-	Employees-->>Client: Resultado de creación
+	Client->>Employees: POST /Employees/CreateEmployee\nJWT + employee data
+	Employees->>SQL: Insert employee
+	SQL-->>Employees: Employee created
+	Employees->>Rabbit: Publish EmployeeCreateEvent
+	Rabbit-->>Users: Deliver event
+	Users->>Cassandra: Create associated user
+	Cassandra-->>Users: Account created
+	Employees-->>Client: Creation result
 
-	Client->>Employees: PUT /Employees/UpdateAttendanceState/{attendance}\nJWT + notas
+	Client->>Employees: PUT /Employees/UpdateAttendanceState/{attendance}\nJWT + notes
 	Employees->>Attendances: GET /Attendances/GetAllAttendances\nAuthorization + userName
-	Attendances->>Mongo: Consultar histórico del usuario
-	Mongo-->>Attendances: Lista de asistencias
-	Attendances-->>Employees: Lista de asistencias
-	Employees->>SQL: Actualizar estado y notas
-	SQL-->>Employees: Actualización confirmada
-	Employees->>Rabbit: Publicar AttendanceStateChangedEvent
-	Rabbit-->>Attendances: Entregar evento
-	Attendances->>Mongo: Insertar nueva asistencia
-	Mongo-->>Attendances: Registro guardado
-	Employees-->>Client: Resultado de actualización
+	Attendances->>Mongo: Query the user's history
+	Mongo-->>Attendances: List of attendances
+	Attendances-->>Employees: List of attendances
+	Employees->>SQL: Update state and notes
+	SQL-->>Employees: Update confirmed
+	Employees->>Rabbit: Publish AttendanceStateChangedEvent
+	Rabbit-->>Attendances: Deliver event
+	Attendances->>Mongo: Insert new attendance
+	Mongo-->>Attendances: Record saved
+	Employees-->>Client: Update result
 ```
 
-### Flujo de arranque
+### Startup flow
 
-1. Docker Compose crea la red interna y los servicios de infraestructura.
-2. RabbitMQ y Cassandra ejecutan sus healthchecks.
-3. Las APIs esperan a que las dependencias necesarias estén disponibles.
-4. SQL Server ejecuta `initsqldatabase.sql` de forma idempotente.
-5. Cassandra ejecuta `cassandra/init.cql` de forma idempotente.
-6. Las APIs registran sus consumidores RabbitMQ y comienzan a atender peticiones.
+1. Docker Compose creates the internal network and infrastructure services.
+2. RabbitMQ and Cassandra run their healthchecks.
+3. The APIs wait until their required dependencies are available.
+4. SQL Server runs `initsqldatabase.sql` idempotently.
+5. Cassandra runs `cassandra/init.cql` idempotently.
+6. The APIs register their RabbitMQ consumers and start serving requests.
 
 ## Docker Compose
 
-El proyecto separa la configuración común de la configuración local:
+The project separates common configuration from local configuration:
 
-- `docker-compose.yml`: configuración base. Define las imágenes y los `Dockerfile` de los servicios.
-- `docker-compose.override.yml`: configuración de desarrollo. Define puertos locales, variables de entorno, volúmenes de datos y dependencias.
+- `docker-compose.yml`: base configuration. Defines the images and `Dockerfile`s for the services.
+- `docker-compose.override.yml`: development configuration. Defines local ports, environment variables, data volumes, and dependencies.
 
-Cuando se ejecuta `docker compose` sin indicar archivos, Compose carga automáticamente `docker-compose.yml` y `docker-compose.override.yml` y combina sus configuraciones.
+When `docker compose` is run without specifying files, Compose automatically loads `docker-compose.yml` and `docker-compose.override.yml` and merges their configurations.
 
-### Desarrollo
+### Development
 
-Usa ambos archivos mediante el comportamiento automático de Compose:
+Use both files via Compose's automatic behavior:
 
 ```powershell
 docker compose up --build
 ```
 
-Para ejecutarlo en segundo plano:
+To run it in the background:
 
 ```powershell
 docker compose up -d --build
 ```
 
-Para detener y eliminar los contenedores y la red:
+To stop and remove the containers and the network:
 
 ```powershell
 docker compose down
 ```
 
-SQL Server usa el volumen Docker `sqlserver_data` para almacenar los archivos `.mdf` y `.ldf`. El entrypoint corrige automáticamente los permisos del volumen para el usuario `mssql`, por lo que no es necesario ejecutar `chown` manualmente.
+SQL Server uses the Docker volume `sqlserver_data` to store the `.mdf` and `.ldf` files. The entrypoint automatically fixes the volume's permissions for the `mssql` user, so there is no need to run `chown` manually.
 
 ```powershell
 docker compose up -d --build
 ```
 
-El volumen conserva los datos aunque se eliminen los contenedores. El directorio `data/sqlServer` anterior no se elimina; se mantiene como respaldo y ya no se monta en SQL Server.
+The volume keeps the data even if the containers are removed. The previous `data/sqlServer` directory is not deleted; it is kept as a backup and is no longer mounted into SQL Server.
 
-MongoDB también usa el volumen Docker `mongodb_data`. El directorio `data/mongo` anterior se conserva como respaldo y ya no se monta, porque el almacenamiento WiredTiger del bind mount provocaba reinicios de MongoDB y respuestas HTTP 500 en `attendances.api`.
+MongoDB also uses the Docker volume `mongodb_data`. The previous `data/mongo` directory is kept as a backup and is no longer mounted, because the WiredTiger storage of the bind mount caused MongoDB restarts and HTTP 500 responses in `attendances.api`.
 
-### Inicialización automática de SQL Server
+### Automatic SQL Server initialization
 
-El servicio `ms.sql.employees.db` usa una imagen personalizada basada en SQL Server. Al iniciar, espera a que SQL Server acepte conexiones y ejecuta `initsqldatabase.sql` automáticamente.
+The `ms.sql.employees.db` service uses a custom image based on SQL Server. On startup, it waits until SQL Server accepts connections and runs `initsqldatabase.sql` automatically.
 
-El script crea de forma idempotente:
+The script idempotently creates:
 
-- la base de datos `EmployeesAttendance`;
-- la tabla `dbo.Employee`;
-- el registro inicial del usuario `hacero`.
+- the `EmployeesAttendance` database;
+- the `dbo.Employee` table;
+- the initial `hacero` user record.
 
-Por tanto, se puede iniciar el entorno normalmente:
+Therefore, the environment can be started normally:
 
 ```powershell
 docker compose up -d --build
 ```
 
-En reinicios posteriores no se duplican la tabla ni el registro inicial. Los cambios realizados después del arranque se conservan en el volumen `sqlserver_data`.
+On subsequent restarts, the table and the initial record are not duplicated. Changes made after startup are preserved in the `sqlserver_data` volume.
 
-No ejecutes `docker-compose.override.yml` de forma aislada. Es un archivo parcial y no contiene `image` ni `build` para todos los servicios.
+Do not run `docker-compose.override.yml` in isolation. It is a partial file and does not contain `image` or `build` for every service.
 
-También se pueden indicar los archivos explícitamente:
+The files can also be specified explicitly:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
 ```
 
-### Producción
+### Production
 
-No uses `docker-compose.override.yml` en producción, porque contiene configuración específica del entorno local, como puertos de desarrollo, volúmenes locales y credenciales de ejemplo.
+Do not use `docker-compose.override.yml` in production, because it contains local-environment-specific configuration, such as development ports, local volumes, and sample credentials.
 
-La ejecución base es:
+The base run command is:
 
 ```powershell
 docker compose -f docker-compose.yml up -d
 ```
 
-Sin embargo, antes de desplegar en producción se recomienda crear un archivo adicional, por ejemplo `docker-compose.prod.yml`, para definir:
+However, before deploying to production it is recommended to create an additional file, for example `docker-compose.prod.yml`, to define:
 
-- variables de entorno y secretos de producción;
-- puertos o un proxy inverso;
-- políticas de reinicio;
-- volúmenes persistentes adecuados;
-- etiquetas, límites de recursos y configuración de red;
-- imágenes versionadas, en lugar de etiquetas ambiguas como `latest`.
+- production environment variables and secrets;
+- ports or a reverse proxy;
+- restart policies;
+- appropriate persistent volumes;
+- labels, resource limits, and network configuration;
+- versioned images, instead of ambiguous tags like `latest`.
 
-Con ese archivo, la ejecución sería:
+With that file, the run command would be:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-Para detener la configuración de producción:
+To stop the production configuration:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 ```
 
-Los secretos reales no deben guardarse en los archivos Compose ni en el repositorio. Deben proporcionarse mediante variables de entorno, un archivo gestionado fuera del control de versiones o un gestor de secretos.
+Real secrets should not be stored in the Compose files or in the repository. They should be provided via environment variables, a file managed outside version control, or a secrets manager.

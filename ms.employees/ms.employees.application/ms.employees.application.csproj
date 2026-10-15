@@ -7,11 +7,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AutoMapper" Version="16.2.0" />
-		<PackageReference Include="MediatR" Version="14.2.0" />
-		<PackageReference Include="Refit" Version="16.1.0" />
-		<PackageReference Include="Refit.HttpClientFactory" Version="16.1.0" />
-		<PackageReference Include="Refit.Reflection" Version="16.1.0" />
+		<PackageReference Include="AutoMapper"/>
+		<PackageReference Include="MediatR" />
+		<PackageReference Include="Refit" />
+		<PackageReference Include="Refit.HttpClientFactory"/>
+		<PackageReference Include="Refit.Reflection" />
 	</ItemGroup>
 
 	<ItemGroup>

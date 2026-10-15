@@ -31,9 +31,6 @@ namespace ms.employees.application.Extensions
     public class Communication
     {
         [Required]
-        public EventBus EventBus { get; set; }
-
-        [Required]
         public External External { get; set; }
     }
 

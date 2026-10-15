@@ -1,20 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.86" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.12" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Dapper"/>
+		<PackageReference Include="Microsoft.Extensions.Configuration" />
+		<PackageReference Include="Microsoft.Extensions.Options" />
+		<PackageReference Include="System.Data.SqlClient" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ms.employees.domain\ms.employees.domain.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\ms.employees.domain\ms.employees.domain.csproj" />
+		<PackageReference Include="Dapper" />
+	</ItemGroup>
 
 </Project>

@@ -21,6 +21,11 @@ namespace ms.attendances.api.Controllers
         public async Task<IActionResult> Attendances(string userName) 
             =>  Ok(await _mediator.Send(new GetAllAttendancesQuery(userName)));
 
+        [HttpGet("ByDateRange")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> AttendancesByDateRange([FromQuery] GetAttendancesByDateRangeRequest request)
+            => Ok(await _mediator.Send(new GetAttendancesByDateRangeQuery(request.UserName, request.From!.Value, request.To!.Value)));
+
         [HttpPost]
         public async Task<IActionResult> Attendance([FromBody] CreateAttendanceRequest createAttendanceRequest)
         {

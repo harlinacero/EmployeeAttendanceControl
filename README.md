@@ -17,6 +17,14 @@ The project is organized as a .NET 10 microservices solution. Each service has i
 
 Each API is internally split into `api`, `application`, `domain`, and `infraestructure` layers when it needs persistence. The APIs expose HTTP and Swagger, and use JWT for authentication and authorization.
 
+### ms.attendances endpoints
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/Attendances?userName={userName}` | any authenticated user | Full attendance history of an employee (used by `ms.employees` via Refit). |
+| GET | `/Attendances/ByDateRange?userName={userName}&from={yyyy-MM-dd}&to={yyyy-MM-dd}` | `admin` | Attendances of an employee between two dates, both days inclusive, at most 31 days, most recent first. Returns `[]` when there are none. Invalid input → `400`. |
+| POST | `/Attendances` | any authenticated user | Creates an attendance record for the current user. |
+
 ### Central package management
 
 The solution uses NuGet Central Package Management (`Directory.Packages.props` at the repository root) to pin a single version per package across all projects. Each `.csproj` references packages without a version, and the actual version is resolved from this central file.

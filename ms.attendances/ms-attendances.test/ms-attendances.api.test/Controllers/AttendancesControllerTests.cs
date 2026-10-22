@@ -1,6 +1,8 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using System.Reflection;
 
 using ms.attendances.api.Controllers;
 using ms.attendances.application.Commands;
@@ -75,6 +77,81 @@ namespace ms_attendances.api.test.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.IsType<bool>(okResult.Value);
+        }
+
+        [Fact]
+        public async Task AttendancesByDateRangeShouldReturnOkResult()
+        {
+            // Arrange
+            var request = new GetAttendancesByDateRangeRequest { UserName = "jdoe", From = new DateOnly(2026, 3, 1), To = new DateOnly(2026, 3, 31) };
+            var expectedQuery = new GetAttendancesByDateRangeQuery("jdoe", new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31));
+            _mediatorMock.Setup(m => m.Send(expectedQuery, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<AttendanceResponse> { new() { UserName = "jdoe" } });
+            var controller = new AttendancesController(_mediatorMock.Object);
+
+            // Act
+            var result = await controller.AttendancesByDateRange(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.IsType<List<AttendanceResponse>>(okResult.Value);
+            _mediatorMock.Verify(m => m.Send(expectedQuery, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task AttendancesByDateRangeShouldReturnOkWithEmptyListWhenNoAttendances()
+        {
+            // Arrange
+            var request = new GetAttendancesByDateRangeRequest { UserName = "jdoe", From = new DateOnly(2026, 9, 1), To = new DateOnly(2026, 9, 30) };
+            _mediatorMock.Setup(m => m.Send(It.IsAny<GetAttendancesByDateRangeQuery>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<AttendanceResponse>());
+            var controller = new AttendancesController(_mediatorMock.Object);
+
+            // Act
+            var result = await controller.AttendancesByDateRange(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var value = Assert.IsType<List<AttendanceResponse>>(okResult.Value);
+            Assert.Empty(value);
+        }
+
+        [Fact]
+        public void AttendancesControllerShouldRequireAuthentication()
+        {
+            // Arrange & Act
+            var authorize = typeof(AttendancesController).GetCustomAttribute<AuthorizeAttribute>();
+
+            // Assert
+            Assert.NotNull(authorize);
+        }
+
+        [Fact]
+        public void AttendancesByDateRangeShouldRequireAdminRole()
+        {
+            // Arrange
+            var method = typeof(AttendancesController).GetMethod(nameof(AttendancesController.AttendancesByDateRange));
+
+            // Act
+            var authorize = method!.GetCustomAttribute<AuthorizeAttribute>();
+
+            // Assert
+            Assert.NotNull(authorize);
+            Assert.Equal("admin", authorize.Roles);
+        }
+
+        [Fact]
+        public void AttendancesByDateRangeShouldBeHttpGetByDateRange()
+        {
+            // Arrange
+            var method = typeof(AttendancesController).GetMethod(nameof(AttendancesController.AttendancesByDateRange));
+
+            // Act
+            var httpGet = method!.GetCustomAttribute<HttpGetAttribute>();
+
+            // Assert
+            Assert.NotNull(httpGet);
+            Assert.Equal("ByDateRange", httpGet.Template);
         }
     }
 }

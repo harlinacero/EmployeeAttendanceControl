@@ -36,3 +36,9 @@ services:
       context: .
       dockerfile: ms.attendances/ms.attendances.api/Dockerfile
 
+  ms.gateway.api:
+    image: ${DOCKER_REGISTRY-}msgatewayapi
+    build:
+      context: .
+      dockerfile: ms.gateway/ms.gateway.api/Dockerfile
+

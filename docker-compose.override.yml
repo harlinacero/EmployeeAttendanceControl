@@ -94,6 +94,21 @@ services:
       ms.rabbitmq.bus:
         condition: service_healthy
 
+  ms.gateway.api:
+    container_name: ms.gateway.api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=80
+    ports:
+      - "9000:80"
+    depends_on:
+      ms.users.api:
+        condition: service_started
+      ms.employees.api:
+        condition: service_started
+      ms.attendances.api:
+        condition: service_started
+
 volumes:
   cassandra_data:
   mongodb_data:

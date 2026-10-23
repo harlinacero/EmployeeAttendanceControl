@@ -1,0 +1,83 @@
+{
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/Authentication",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Authentication",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9009 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/User",
+      "UpstreamHttpMethod": [ "Get" ],
+      "DownstreamPathTemplate": "/User",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9009 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] },
+      "RouteClaimsRequirement": { "role": "admin" }
+    },
+    {
+      "UpstreamPathTemplate": "/User",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/User",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9009 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] },
+      "RouteClaimsRequirement": { "role": "admin" }
+    },
+    {
+      "UpstreamPathTemplate": "/Employees",
+      "UpstreamHttpMethod": [ "Get" ],
+      "DownstreamPathTemplate": "/Employees",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9010 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] },
+      "RouteClaimsRequirement": { "role": "admin" }
+    },
+    {
+      "UpstreamPathTemplate": "/Employees",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Employees",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9010 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] },
+      "RouteClaimsRequirement": { "role": "admin" }
+    },
+    {
+      "UpstreamPathTemplate": "/Employees/AttendanceState/{attendance}",
+      "UpstreamHttpMethod": [ "Put" ],
+      "DownstreamPathTemplate": "/Employees/AttendanceState/{attendance}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9010 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
+    },
+    {
+      "UpstreamPathTemplate": "/Attendances",
+      "UpstreamHttpMethod": [ "Get" ],
+      "DownstreamPathTemplate": "/Attendances",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9020 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
+    },
+    {
+      "UpstreamPathTemplate": "/Attendances/ByDateRange",
+      "UpstreamHttpMethod": [ "Get" ],
+      "DownstreamPathTemplate": "/Attendances/ByDateRange",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9020 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] },
+      "RouteClaimsRequirement": { "role": "admin" }
+    },
+    {
+      "UpstreamPathTemplate": "/Attendances",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Attendances",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9020 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:9001"
+  }
+}

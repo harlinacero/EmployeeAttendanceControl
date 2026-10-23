@@ -5,7 +5,8 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 ## SDD Conventions
 
 ### Structure
-- Service folders: `ms.*` (`ms.users`, `ms.employees`, `ms.attendances`); `ms.communications/ms.rabbitmq` is a shared RabbitMQ library, not a service
+- Service folders: `ms.*` (`ms.users`, `ms.employees`, `ms.attendances`, `ms.gateway`); `ms.communications/ms.rabbitmq` is a shared RabbitMQ library, not a service
+- `ms.gateway` is the API gateway (Ocelot): api layer only (`ms.gateway.api`: `Program.cs`, `Extensions/`, `ocelot.json` + `ocelot.Local.json`), no application/domain/infrastructure and no persistence; tests in `ms.gateway/ms.gateway.test/ms.gateway.api.test`
 - Features folder: `<service>/features/NNN-feature-name/`
 - Layers per service: `<svc>.api` (controllers, consumers, events, DI extensions, `SettingsOptions`), `<svc>.application` (commands/queries + `Handlers/`, `Mappers/`, `Request/`/`Requests/`, `Responses/`), `<svc>.domain` (`Entities/`, `Repositories/` interfaces), `<svc>.infraestucture` (data context, persistence entities, repositories)
 - Keep the existing spellings: `infraestucture` (attendances, employees), `infraestructure` (users), test folder `ms-attendances.test`, test project `ms-attendances.api.test` (namespace `ms_attendances.api.test`)
@@ -41,6 +42,7 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 - Async: RabbitMQ via `ms.communications/ms.rabbitmq`; queue name = event class name (`nameof(AttendanceStateChangedEvent)`), durable queues; consumers in `<svc>.api/Consumers` implementing `IConsumer`
 - Events: `EmployeeCreateEvent` (employees → users), `AttendanceStateChangedEvent` (employees → attendances)
 - Sync: Refit clients in `<svc>.application/HttpComunications` (e.g. `ms.employees` → `GET /Attendances?userName=` forwarding the caller's `Authorization` header). Changing an existing route/contract breaks these clients.
+- Clients go through `ms.gateway.api` (container `:9000`, local `:9001`), which exposes the same routes as the services. A new or changed endpoint must be added to **both** `ocelot.json` and `ocelot.Local.json` (same order), with `AuthenticationOptions` `Bearer` unless anonymous and `RouteClaimsRequirement { "role": "admin" }` for admin-only; `OcelotRoutesTests` keeps the catalog in sync. Service-to-service calls stay direct (not through the gateway). Services remain reachable directly on `:9009`/`:9010`/`:9020`
 
 ### Commands
 - Build: `dotnet build EmployeeAttendanceControl.sln`

@@ -8,6 +8,7 @@ The project is organized as a .NET 10 microservices solution. Each service has i
 
 ### Components
 
+- **ms.gateway**: API gateway (Ocelot). The single entry point for clients: it forwards each request to the service that handles it, after checking the JWT and, for admin-only operations, the `admin` role. It has no persistence.
 - **ms.users**: authentication, users, and JWT token issuance. Uses Cassandra.
 - **ms.employees**: employee management and current attendance state. Uses SQL Server.
 - **ms.attendances**: attendance history. Uses MongoDB.
@@ -16,6 +17,26 @@ The project is organized as a .NET 10 microservices solution. Each service has i
 - **SQL Server, Cassandra, and MongoDB**: storage specialized per service.
 
 Each API is internally split into `api`, `application`, `domain`, and `infraestructure` layers when it needs persistence. The APIs expose HTTP and Swagger, and use JWT for authentication and authorization.
+
+### Gateway routes
+
+`ms.gateway.api` exposes the same routes as the services, so a client only changes the host and port. The services keep validating the token themselves, and remain reachable directly on their own ports.
+
+| Method | Route | Service | Auth at gateway |
+|--------|-------|---------|-----------------|
+| POST | `/Authentication` | ms.users | none |
+| GET | `/User` | ms.users | `admin` |
+| POST | `/User` | ms.users | `admin` |
+| GET | `/Employees` | ms.employees | `admin` |
+| POST | `/Employees` | ms.employees | `admin` |
+| PUT | `/Employees/AttendanceState/{attendance}` | ms.employees | any authenticated user |
+| GET | `/Attendances?userName={userName}` | ms.attendances | any authenticated user |
+| GET | `/Attendances/ByDateRange?userName=&from=&to=` | ms.attendances | `admin` |
+| POST | `/Attendances` | ms.attendances | any authenticated user |
+
+Gateway responses: no/invalid/expired token → `401`; valid token without the `admin` role on an admin route → `403`; any other route or method → `404`; service unreachable → `502` (timeout → `503`). Every other response comes from the service unchanged.
+
+Routes are defined in `ms.gateway/ms.gateway.api/ocelot.json` (containers) and `ocelot.Local.json` (gateway running on the host). Both files must keep the same routes; a unit test checks it.
 
 ### ms.attendances endpoints
 
@@ -34,6 +55,8 @@ The solution uses NuGet Central Package Management (`Directory.Packages.props` a
 ```mermaid
 flowchart TB
 	Client[HTTP Client / Swagger]
+	Gateway[ms.gateway.api
+API gateway - Ocelot]
 
 	subgraph Services[Microservices]
 		Users[ms.users.api\nAuthentication and users]
@@ -52,9 +75,11 @@ flowchart TB
 		Mongo[(MongoDB\nDbHistoricalAttendance.Attendances)]
 	end
 
-	Client -->|POST /Authentication| Users
-	Client -->|GET/POST/PUT Employees| Employees
-	Client -->|GET/POST Attendances| Attendances
+	Client -->|All requests :9000| Gateway
+	Client -.->|Direct access :9009 / :9010 / :9020| Services
+	Gateway -->|/Authentication, /User| Users
+	Gateway -->|/Employees| Employees
+	Gateway -->|/Attendances| Attendances
 
 	Users -->|Reads and creates users| Cassandra
 	Employees -->|Reads and updates employees| Sql
@@ -176,6 +201,22 @@ docker compose up -d --build
 The volume keeps the data even if the containers are removed. The previous `data/sqlServer` directory is not deleted; it is kept as a backup and is no longer mounted into SQL Server.
 
 MongoDB also uses the Docker volume `mongodb_data`. The previous `data/mongo` directory is kept as a backup and is no longer mounted, because the WiredTiger storage of the bind mount caused MongoDB restarts and HTTP 500 responses in `attendances.api`.
+
+### Running the API gateway
+
+The gateway can run in two ways. The routes file is chosen by `ASPNETCORE_ENVIRONMENT`, with no code change:
+
+| Mode | How to start | Gateway URL | Routes file | Downstream services |
+|------|--------------|-------------|-------------|---------------------|
+| Containers | `docker compose up -d --build` (service `ms.gateway.api`, `ASPNETCORE_ENVIRONMENT=Development`) | `http://localhost:9000` | `ocelot.json` | `ms.users.api:80`, `ms.employees.api:80`, `ms.attendances.api:80` |
+| Local (host) | `dotnet run --project ms.gateway/ms.gateway.api --environment Local`, or the `ms.gateway.api` launch profile | `http://localhost:9001` | `ocelot.Local.json` | `localhost:9009`, `localhost:9010`, `localhost:9020` |
+
+Local mode needs the services running in Compose with their published ports. Example:
+
+```powershell
+$token = Invoke-RestMethod -Method Post -Uri http://localhost:9000/Authentication -ContentType 'application/json' -Body '{"userName":"admin","password":"1234"}'
+Invoke-RestMethod -Uri http://localhost:9000/Employees -Headers @{ Authorization = "Bearer $token" }
+```
 
 ### Automatic SQL Server initialization
 

@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "ms.assistant.api": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:9030"
+    }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json"
+}

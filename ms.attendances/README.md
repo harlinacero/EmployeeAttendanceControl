@@ -15,12 +15,20 @@ The solution is split into four projects:
 
 In development it is exposed at `http://localhost:9020`.
 
-| Method | Route                                                | Authorization | Function                                         |
-| ------ | ---------------------------------------------------- | -------------- | ------------------------------------------------- |
-| `GET`  | `/Attendances/GetAllAttendances?userName={userName}` | JWT            | Returns the user's history.                       |
-| `POST` | `/Attendances/CreateAttendance`                      | JWT            | Records an attendance for the authenticated user. |
+| Method | Route | Authorization | Function |
+| ------ | ----- | ------------- | -------- |
+| `GET`  | `/Attendances?userName={userName}` | JWT | Returns the full attendance history of an employee. |
+| `GET`  | `/Attendances/ByDateRange?userName={userName}&from={yyyy-MM-dd}&to={yyyy-MM-dd}` | `admin` | Returns an employee's attendances between two dates: both days inclusive, at most 31 days, most recent first. Returns `[]` when there are none; invalid input → `400`. |
+| `POST` | `/Attendances` | JWT | Records an attendance for the authenticated user. |
 
-`CreateAttendance` obtains the username from the `NameIdentifier` claim and receives a `CreateAttendanceRequest` with the attendance data.
+`POST /Attendances` obtains the username from the `NameIdentifier` claim and receives a `CreateAttendanceRequest` with the attendance data. The history is append-only: there are no update or delete endpoints.
+
+### Consumers of this API
+
+- `ms.employees` (Refit) calls `GET /Attendances?userName=`.
+- `ms.assistant` (Refit, with the caller's JWT) calls `GET /Attendances?userName=` (tool `get_my_attendances`) and `GET /Attendances/ByDateRange` (tool `get_attendances_by_date_range`, admin). The 31-day limit is duplicated in `GetAttendancesByDateRangeTool.MaxRangeDays`.
+
+Changing these routes or their responses breaks those clients.
 
 ## MongoDB
 
@@ -63,11 +71,15 @@ The `ms-attendances.test` folder contains xUnit test projects, one per layer:
 - `ms.attendances.application.test`
 - `ms.attendances.infraestucture.test`
 
-They use `xunit`, `Moq`, and `coverlet.collector`. Run them with:
+They use `xunit`, `Moq`, and `coverlet.collector`. Run them from the repository root, one project at a time (the service folder has no project or solution file, so `dotnet test ms.attendances` fails):
 
 ```powershell
-dotnet test ms.attendances
+dotnet test ms.attendances/ms-attendances.test/ms-attendances.api.test
+dotnet test ms.attendances/ms-attendances.test/ms.attendances.application.test
+dotnet test ms.attendances/ms-attendances.test/ms.attendances.infraestucture.test
 ```
+
+Or run the whole solution with `dotnet test EmployeeAttendanceControl.sln`.
 
 ## Running
 

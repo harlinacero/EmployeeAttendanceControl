@@ -1,4 +1,4 @@
-# [002] API gateway (single entry point) — Business Specification
+# [001] API gateway (single entry point) — Business Specification
 
 > Status: Approved (2026-10-22)
 > Owning service: `ms.gateway` (new)

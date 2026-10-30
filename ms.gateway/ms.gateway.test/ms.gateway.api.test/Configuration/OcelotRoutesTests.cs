@@ -11,6 +11,7 @@ namespace ms.gateway.api.test.Configuration
         private const string UsersService = "ms.users.api";
         private const string EmployeesService = "ms.employees.api";
         private const string AttendancesService = "ms.attendances.api";
+        private const string AssistantService = "ms.assistant.api";
 
         // Operation catalog (business spec BR-01, tech spec §3): method, path, owning service.
         private static readonly (string Method, string Path, string Service)[] Catalog =
@@ -23,7 +24,8 @@ namespace ms.gateway.api.test.Configuration
             ("PUT", "/Employees/AttendanceState/{attendance}", EmployeesService),
             ("GET", "/Attendances", AttendancesService),
             ("GET", "/Attendances/ByDateRange", AttendancesService),
-            ("POST", "/Attendances", AttendancesService)
+            ("POST", "/Attendances", AttendancesService),
+            ("POST", "/Assistant/Chat", AssistantService)
         ];
 
         private const string BearerScheme = "Bearer";
@@ -40,7 +42,8 @@ namespace ms.gateway.api.test.Configuration
         [
             Key("PUT", "/Employees/AttendanceState/{attendance}"),
             Key("GET", "/Attendances"),
-            Key("POST", "/Attendances")
+            Key("POST", "/Attendances"),
+            Key("POST", "/Assistant/Chat")
         ];
 
         private static FileConfiguration LoadRoutes(string fileName)
@@ -208,7 +211,8 @@ namespace ms.gateway.api.test.Configuration
             {
                 [UsersService] = 9009,
                 [EmployeesService] = 9010,
-                [AttendancesService] = 9020
+                [AttendancesService] = 9020,
+                [AssistantService] = 9030
             };
             var expectedService = Catalog.ToDictionary(operation => Key(operation.Method, operation.Path), operation => operation.Service);
 

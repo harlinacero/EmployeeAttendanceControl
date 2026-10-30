@@ -36,6 +36,11 @@
 		<PackageVersion Include="Ocelot" Version="25.0.2" />
 	</ItemGroup>
 
+	<!-- AI assistant (ms.assistant) -->
+	<ItemGroup>
+		<PackageVersion Include="Anthropic" Version="13.3.0" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageVersion Include="coverlet.collector" Version="6.0.4" />
 		<PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />

@@ -1,4 +1,4 @@
-# [002] API gateway (single entry point) — Technical Specification
+# [001] API gateway (single entry point) — Technical Specification
 
 > Status: Approved (2026-10-22)
 > Based on: `01-business-spec.md` (Approved 2026-10-22)

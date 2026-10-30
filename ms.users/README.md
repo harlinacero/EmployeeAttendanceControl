@@ -68,11 +68,15 @@ The `ms.users.test` folder contains xUnit test projects, one per layer:
 - `ms.users.application.test`
 - `ms.users.infraestructure.test`
 
-They use `xunit`, `Moq`, and `coverlet.collector`. Run them with:
+They use `xunit`, `Moq`, and `coverlet.collector`. Run them from the repository root, one project at a time (the service folder has no project or solution file, so `dotnet test ms.users` fails):
 
 ```powershell
-dotnet test ms.users
+dotnet test ms.users/ms.users.test/ms.users.api.test
+dotnet test ms.users/ms.users.test/ms.users.application.test
+dotnet test ms.users/ms.users.test/ms.users.infraestructure.test
 ```
+
+Or run the whole solution with `dotnet test EmployeeAttendanceControl.sln`.
 
 ## Running
 

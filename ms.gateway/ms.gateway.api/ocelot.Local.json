@@ -75,6 +75,14 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9020 } ],
       "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
+    },
+    {
+      "UpstreamPathTemplate": "/Assistant/Chat",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Assistant/Chat",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9030 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
     }
   ],
   "GlobalConfiguration": {

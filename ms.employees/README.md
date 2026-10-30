@@ -15,13 +15,13 @@ The solution is split into four projects:
 
 In development it is exposed at `http://localhost:9010`.
 
-| Method | Route                                            | Authorization | Function                                                   |
-| ------ | ----------------------------------------------- | -------------- | ------------------------------------------------------------ |
-| `GET`  | `/Employees/GetAllEmployees`                    | `admin`        | Returns all employees.                                       |
-| `POST` | `/Employees/CreateEmployee`                     | `admin`        | Creates an employee and publishes its creation event.        |
-| `PUT`  | `/Employees/UpdateAttendanceState/{attendance}` | JWT            | Updates the attendance state of the authenticated user.      |
+| Method | Route | Authorization | Function |
+| ------ | ----- | ------------- | -------- |
+| `GET`  | `/Employees` | `admin` | Returns all employees with their current attendance state. |
+| `POST` | `/Employees` | `admin` | Creates an employee and publishes its creation event. |
+| `PUT`  | `/Employees/AttendanceState/{attendance}` | JWT | Updates the attendance state of the authenticated user. |
 
-`CreateEmployee` receives `UserName`, `FirstName`, `LastName`, `Password`, and `Role`. `UpdateAttendanceState` receives the notes in the body and obtains the user from the `NameIdentifier` claim of the JWT.
+`POST /Employees` receives `UserName`, `FirstName`, `LastName`, `Password`, and `Role`. `PUT /Employees/AttendanceState/{attendance}` receives the notes in the body and obtains the user from the `NameIdentifier` claim of the JWT.
 
 ## SQL Server
 
@@ -36,10 +36,14 @@ The `initsqldatabase.sql` file, run by the custom SQL Server image, creates the 
 When updating attendance, the handler calls:
 
 ```text
-GET http://ms.attendances.api:80/Attendances/GetAllAttendances?userName={userName}
+GET http://ms.attendances.api:80/Attendances?userName={userName}
 ```
 
 It uses the `Authorization` header received in the request. The number of attendances is included in the notes saved in SQL Server.
+
+### Consumers of this API
+
+`ms.assistant` (Refit, with the caller's JWT) calls `GET /Employees` (tool `list_employees`, admin only) to answer questions about the staff's current attendance state. Changing this route or `EmployeeResponse` breaks the assistant.
 
 ### RabbitMQ events
 
@@ -67,11 +71,15 @@ The `ms.employees.test` folder contains xUnit test projects, one per layer:
 - `ms.employees.application.test`
 - `ms.employees.infraestucture.test`
 
-They use `xunit`, `Moq`, and `coverlet.collector`. Run them with:
+They use `xunit`, `Moq`, and `coverlet.collector`. Run them from the repository root, one project at a time (the service folder has no project or solution file, so `dotnet test ms.employees` fails):
 
 ```powershell
-dotnet test ms.employees
+dotnet test ms.employees/ms.employees.test/ms.employees.api.test
+dotnet test ms.employees/ms.employees.test/ms.employees.application.test
+dotnet test ms.employees/ms.employees.test/ms.employees.infraestucture.test
 ```
+
+Or run the whole solution with `dotnet test EmployeeAttendanceControl.sln`.
 
 ## Running
 

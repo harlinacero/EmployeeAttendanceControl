@@ -1,4 +1,4 @@
-# [002] API gateway (single entry point) — Tasks (TDD)
+# [001] API gateway (single entry point) — Tasks (TDD)
 
 > Status: Approved (2026-10-22)
 > Based on: `02-technical-spec.md` (Approved 2026-10-22)

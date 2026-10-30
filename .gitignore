@@ -364,3 +364,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Local secrets for docker compose (e.g. ANTHROPIC_API_KEY)
+.env

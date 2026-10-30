@@ -1,4 +1,4 @@
-# [002] API gateway (single entry point) — Implementation Checklist
+# [001] API gateway (single entry point) — Implementation Checklist
 
 > Last reviewed: 2026-10-22
 > Overall: ✅ Complete (implementation and verification done; not committed yet)
@@ -73,7 +73,7 @@ Every use-case flow (UC-01 main/A1/A2/A3/E1/E2, UC-02 main/A1/E1/E2/E3) and BR-0
 - [x] Settings in `appsettings.json`, with the container overrides in `docker-compose.override.yml`.
 - [x] Inter-service: service-to-service calls stay direct (AC-15); service ports are unchanged.
 - [x] Encoding: new `.cs` files have a UTF-8 BOM, like the existing ones.
-- [x] Git: branch `feature/002-ocelot-api-gateway` matches the feature folder name.
+- [x] Git: work done on branch `feature/002-ocelot-api-gateway`. The folder was later renumbered to `001` when feature numbers became per service.
 
 No violations found.
 

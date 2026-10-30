@@ -7,9 +7,10 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 ### Structure
 - Service folders: `ms.*` (`ms.users`, `ms.employees`, `ms.attendances`, `ms.gateway`); `ms.communications/ms.rabbitmq` is a shared RabbitMQ library, not a service
 - `ms.gateway` is the API gateway (Ocelot): api layer only (`ms.gateway.api`: `Program.cs`, `Extensions/`, `ocelot.json` + `ocelot.Local.json`), no application/domain/infrastructure and no persistence; tests in `ms.gateway/ms.gateway.test/ms.gateway.api.test`
-- Features folder: `<service>/features/NNN-feature-name/`
+- Features folder: `<service>/features/NNN-feature-name/`. `NNN` is numbered **per service**: each service's `features/` has its own sequence starting at `001` (a new service starts at `001`), so two services can share a number
 - Layers per service: `<svc>.api` (controllers, consumers, events, DI extensions, `SettingsOptions`), `<svc>.application` (commands/queries + `Handlers/`, `Mappers/`, `Request/`/`Requests/`, `Responses/`), `<svc>.domain` (`Entities/`, `Repositories/` interfaces), `<svc>.infraestucture` (data context, persistence entities, repositories)
 - Keep the existing spellings: `infraestucture` (attendances, employees), `infraestructure` (users), test folder `ms-attendances.test`, test project `ms-attendances.api.test` (namespace `ms_attendances.api.test`)
+- Solution (`EmployeeAttendanceControl.sln`): each service has a solution folder named like the service (e.g. `ms.users`) holding its layer projects, and its test solution folder (`<svc>.test`) is **nested inside the service's folder**, never at the solution root (e.g. `ms.users` → `ms.users.test` → test projects). After `dotnet sln add --solution-folder`, check `NestedProjects` and nest the test folder under the service folder
 - Persistence: ms.users → Cassandra, ms.employees → SQL Server via Dapper, ms.attendances → MongoDB (`MongoDB.Driver`)
 
 ### Code style
@@ -37,6 +38,10 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 - NuGet Central Package Management: versions only in root `Directory.Packages.props`; `.csproj` uses `<PackageReference Include="X" />` without version
 - Any new package is a team decision — flag it
 - Settings in `appsettings.json`, overridden by env vars in `docker-compose.override.yml`
+
+### Documentation
+- Two levels of README: the root `README.md` (architecture, gateway route table, diagrams, cross-service communication) and one `README.md` per service (`<svc>/README.md`: Responsibility, API, persistence/config, communication, security, dependencies, tests, running)
+- A feature updates **both**: the owning service's README and the root one. A new service gets its own README with the same sections. When a service starts calling another one's endpoint, note it under "Consumers of this API" in the called service's README
 
 ### Inter-service communication
 - Async: RabbitMQ via `ms.communications/ms.rabbitmq`; queue name = event class name (`nameof(AttendanceStateChangedEvent)`), durable queues; consumers in `<svc>.api/Consumers` implementing `IConsumer`

@@ -75,6 +75,14 @@
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [ { "Host": "ms.attendances.api", "Port": 80 } ],
       "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
+    },
+    {
+      "UpstreamPathTemplate": "/Assistant/Chat",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Assistant/Chat",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "ms.assistant.api", "Port": 80 } ],
+      "AuthenticationOptions": { "AuthenticationProviderKeys": [ "Bearer" ] }
     }
   ],
   "GlobalConfiguration": {

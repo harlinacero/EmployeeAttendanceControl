@@ -12,6 +12,7 @@ The project is organized as a .NET 10 microservices solution. Each service has i
 - **ms.users**: authentication, users, and JWT token issuance. Uses Cassandra.
 - **ms.employees**: employee management and current attendance state. Uses SQL Server.
 - **ms.attendances**: attendance history. Uses MongoDB.
+- **ms.assistant**: AI assistant (Claude). Answers attendance questions in natural language by calling the other services with the caller's token. Read-only, no persistence.
 - **ms.communications**: shared library for publishing and consuming RabbitMQ events.
 - **RabbitMQ**: message bus for asynchronous communication.
 - **SQL Server, Cassandra, and MongoDB**: storage specialized per service.
@@ -33,17 +34,20 @@ Each API is internally split into `api`, `application`, `domain`, and `infraestr
 | GET | `/Attendances?userName={userName}` | ms.attendances | any authenticated user |
 | GET | `/Attendances/ByDateRange?userName=&from=&to=` | ms.attendances | `admin` |
 | POST | `/Attendances` | ms.attendances | any authenticated user |
+| POST | `/Assistant/Chat` | ms.assistant | any authenticated user |
 
 Gateway responses: no/invalid/expired token → `401`; valid token without the `admin` role on an admin route → `403`; any other route or method → `404`; service unreachable → `502` (timeout → `503`). Every other response comes from the service unchanged.
 
 Routes are defined in `ms.gateway/ms.gateway.api/ocelot.json` (containers) and `ocelot.Local.json` (gateway running on the host). Both files must keep the same routes; a unit test checks it.
+
+Each service has its own README with its API, configuration, dependencies and tests: `ms.users/README.md`, `ms.employees/README.md`, `ms.attendances/README.md`, `ms.assistant/README.md`, `ms.communications/README.md`.
 
 ### ms.attendances endpoints
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
 | GET | `/Attendances?userName={userName}` | any authenticated user | Full attendance history of an employee (used by `ms.employees` via Refit). |
-| GET | `/Attendances/ByDateRange?userName={userName}&from={yyyy-MM-dd}&to={yyyy-MM-dd}` | `admin` | Attendances of an employee between two dates, both days inclusive, at most 31 days, most recent first. Returns `[]` when there are none. Invalid input → `400`. |
+| GET | `/Attendances/ByDateRange?userName={userName}&from={yyyy-MM-dd}&to={yyyy-MM-dd}` | `admin` | Attendances of an employee between two dates, both days inclusive, at most 31 days, most recent first. Returns `[]` when there are none. Invalid input → `400`. The 31-day limit is duplicated in `ms.assistant` (`GetAttendancesByDateRangeTool.MaxRangeDays`); change both together. |
 | POST | `/Attendances` | any authenticated user | Creates an attendance record for the current user. |
 
 ### Central package management
@@ -62,6 +66,7 @@ API gateway - Ocelot]
 		Users[ms.users.api\nAuthentication and users]
 		Employees[ms.employees.api\nEmployees and current state]
 		Attendances[ms.attendances.api\nAttendance history]
+		Assistant[ms.assistant.api\nAI assistant]
 		Communications[ms.communications\nRabbitMQ library]
 	end
 
@@ -80,6 +85,10 @@ API gateway - Ocelot]
 	Gateway -->|/Authentication, /User| Users
 	Gateway -->|/Employees| Employees
 	Gateway -->|/Attendances| Attendances
+	Gateway -->|/Assistant/Chat| Assistant
+	Assistant -->|Refit HTTP GET with caller JWT| Attendances
+	Assistant -->|Refit HTTP GET with caller JWT| Employees
+	Assistant -->|Messages API| Claude[(Anthropic API\nClaude)]
 
 	Users -->|Reads and creates users| Cassandra
 	Employees -->|Reads and updates employees| Sql
@@ -131,7 +140,7 @@ sequenceDiagram
 	Cassandra-->>Users: User and role
 	Users-->>Client: JWT
 
-	Client->>Employees: POST /Employees/CreateEmployee\nJWT + employee data
+	Client->>Employees: POST /Employees\nJWT + employee data
 	Employees->>SQL: Insert employee
 	SQL-->>Employees: Employee created
 	Employees->>Rabbit: Publish EmployeeCreateEvent
@@ -140,8 +149,8 @@ sequenceDiagram
 	Cassandra-->>Users: Account created
 	Employees-->>Client: Creation result
 
-	Client->>Employees: PUT /Employees/UpdateAttendanceState/{attendance}\nJWT + notes
-	Employees->>Attendances: GET /Attendances/GetAllAttendances\nAuthorization + userName
+	Client->>Employees: PUT /Employees/AttendanceState/{attendance}\nJWT + notes
+	Employees->>Attendances: GET /Attendances?userName=\nAuthorization
 	Attendances->>Mongo: Query the user's history
 	Mongo-->>Attendances: List of attendances
 	Attendances-->>Employees: List of attendances
@@ -162,6 +171,45 @@ sequenceDiagram
 4. SQL Server runs `initsqldatabase.sql` idempotently.
 5. Cassandra runs `cassandra/init.cql` idempotently.
 6. The APIs register their RabbitMQ consumers and start serving requests.
+
+### ms.assistant (AI assistant)
+
+`POST /Assistant/Chat` answers attendance questions in natural language. It is an **agent**: Claude reads the question, decides which tools it needs, and `ms.assistant` runs those tools by calling the other services with the caller's own JWT. Then Claude writes the answer from the data it received.
+
+| Tool | Offered to | Calls |
+|------|-----------|-------|
+| `get_my_attendances` | everyone | `GET /Attendances?userName={caller}` |
+| `get_attendances_by_date_range` | admin | `GET /Attendances/ByDateRange` |
+| `list_employees` | admin | `GET /Employees` |
+
+Request and response:
+
+```json
+{ "question": "¿Y la semana pasada?",
+  "history": [ { "role": "user", "content": "¿Cuántas veces falté este mes?" },
+               { "role": "assistant", "content": "Dos veces: el 3 y el 17 de octubre." } ] }
+```
+```json
+{ "answer": "La semana pasada no tienes ausencias registradas." }
+```
+
+Errors: `400` question empty or longer than 2,000 characters, or more than 20 previous messages · `401` no token · `503` AI service unavailable.
+
+**Running it** requires an Anthropic API key, which is never committed:
+
+```powershell
+Copy-Item .env.example .env      # then set ANTHROPIC_API_KEY=... in .env
+docker compose up -d --build
+```
+
+Settings (`ms.assistant/ms.assistant.api/appsettings.json`):
+- `Anthropic:Model` (default `claude-opus-5-5`);
+- `Anthropic:Effort` (default `low`);
+- `Anthropic:MaxTokens`;
+- `Anthropic:TimeoutSeconds`;
+- `Assistant:MaxToolRounds` (default 5).
+
+Every question costs tokens. Each answer logs its token usage (without the question or answer text). The design is in `ms.assistant/features/001-ai-attendance-assistant/`.
 
 ## Docker Compose
 

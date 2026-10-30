@@ -1,8 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 
@@ -14,10 +12,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\ms.communications\ms.rabbitmq\ms.rabbitmq.csproj" />
     <ProjectReference Include="..\ms.attendances.domain\ms.attendances.domain.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Extensions\" />
   </ItemGroup>
 
 </Project>

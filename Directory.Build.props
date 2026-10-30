@@ -1,0 +1,32 @@
+<Project>
+	<!-- Shared build settings for every .csproj in the solution,
+	https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-by-directory
+	A value set in a project file overrides the default here. Package versions live in Directory.Packages.props. -->
+	<PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsTestProject Condition="$(MSBuildProjectName.EndsWith('.test'))">true</IsTestProject>
+	</PropertyGroup>
+
+	<!-- Test projects: the project name ends in .test -->
+	<PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(IsTestProject)' == 'true'">
+		<PackageReference Include="coverlet.collector" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="Moq" />
+		<PackageReference Include="xunit" />
+		<PackageReference Include="xunit.runner.visualstudio" />
+		<Using Include="Xunit" />
+	</ItemGroup>
+
+	<!-- Web API projects (Microsoft.NET.Sdk.Web): container tooling. APIs live at <svc>/<svc>.api -->
+	<PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' And '$(UsingMicrosoftNETSdkWeb)' == 'true'">
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<DockerfileContext>..\..</DockerfileContext>
+		<DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+	</PropertyGroup>
+</Project>

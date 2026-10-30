@@ -7,6 +7,7 @@ EXPOSE 80
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["Directory.Packages.props", "./"]
+COPY ["Directory.Build.props", "./"]
 COPY ["ms.gateway/ms.gateway.api/ms.gateway.api.csproj", "ms.gateway/ms.gateway.api/"]
 RUN dotnet restore "ms.gateway/ms.gateway.api/ms.gateway.api.csproj"
 COPY . .

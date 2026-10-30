@@ -54,6 +54,18 @@ Each service has its own README with its API, configuration, dependencies and te
 
 The solution uses NuGet Central Package Management (`Directory.Packages.props` at the repository root) to pin a single version per package across all projects. Each `.csproj` references packages without a version, and the actual version is resolved from this central file.
 
+### Shared build configuration
+
+`Directory.Build.props` at the repository root holds the build settings shared by every project, so each `.csproj` only declares what is specific to it ([MSBuild docs](https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-by-directory)):
+
+| Applies to | Settings |
+|------------|----------|
+| Every `.csproj` | `TargetFramework` `net10.0`, `ImplicitUsings`, `Nullable` enabled (the application/domain/infrastructure layers turn it off in their own `.csproj`) |
+| Test projects (name ends in `.test`) | `IsPackable=false`, xUnit, xUnit runner, test SDK, Moq, coverlet, global `using Xunit` |
+| Web APIs (`Microsoft.NET.Sdk.Web`) | Docker tooling: Linux target, repository root as build context, path to `docker-compose.dcproj` |
+
+A value set in a `.csproj` overrides the shared one. The Dockerfiles copy `Directory.Build.props` and `Directory.Packages.props` before `dotnet restore`. After pulling these files, reload the solution in Visual Studio.
+
 ### Component diagram
 
 ```mermaid

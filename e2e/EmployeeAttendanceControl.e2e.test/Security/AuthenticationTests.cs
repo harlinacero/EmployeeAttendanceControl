@@ -19,7 +19,7 @@ namespace EmployeeAttendanceControl.e2e.test.Security
 
             // Assert
             Assert.True(response.StatusCode == HttpStatusCode.OK, $"POST /Authentication as seeded admin: expected 200, got {(int)response.StatusCode}");
-            Assert.Equal(3, token.Split('.').Length);
+            Assert.Equal(4, token.Split('.').Length);
         }
 
         [Fact]

@@ -97,8 +97,8 @@ Stack checks run against a kept environment while developing: `e2e/run-e2e.ps1 -
 - [x] **T-42** `[TEST:manual]` Against a kept stack, run with a wrong `E2E_ADMIN_PASSWORD`: the checks that need the admin fail with "Seeded admin could not sign in", and none passes (AC-17)
 
 ## Group 13 — AC-25, AC-26: pull request check
-- [ ] **T-43** `[IMPL]` `.github/workflows/e2e.yml` — per spec §2
-- [ ] **T-44** `[TEST:manual]` This feature's PR runs the workflow and shows it as passed (AC-25). Push a temporary failing expectation: the PR shows it as failed, with the trx artifact available; then revert (AC-26). **Done only once the PR exists, and only after you agree to the push**
+- [x] **T-43** `[IMPL]` `.github/workflows/e2e.yml` — per spec §2
+- [x] **T-44** `[TEST:manual]` This feature's PR runs the workflow and shows it as passed (AC-25). Push a temporary failing expectation: the PR shows it as failed, with the trx artifact available; then revert (AC-26). **Done only once the PR exists, and only after you agree to the push**
 
 ## Group 14 — AC-27, AC-28: shipping workflow
 - [x] **T-45** `[IMPL]` `~/.claude/skills/ship-feature/SKILL.md` — step 1b per spec §2 (outside the repository, Q-04)
@@ -171,7 +171,7 @@ Stack checks run against a kept environment while developing: `e2e/run-e2e.ps1 -
 - **T-01 baseline:** 13 projects, 175 tests, all passing, as spec §9 expected.
 - **T-13 names:** the tests call `AssistantFactAttribute.SkipReason(requested, keyProvided)`, so they don't depend on environment variables.
 - **`dotnet sln add` regenerated the GUIDs of two unrelated solution folders**, so the project was added by hand. The solution diff is 17 added lines and nothing else.
-- **Not ticked:** T-35 (the real key case is paid), T-43 and T-44 (the workflow has never run), T-46 (the skill's reaction is exercised when shipping). See `04-checklist.md`.
+- **Not ticked:** T-35 (the real key case is paid; accepted risk), T-46 (the skill ran on the passing path only; its reaction to a failing check or to Docker being stopped wasn't exercised). See `04-checklist.md`.
 - **T-38** compared counts, start times and restart counts instead of inserting a marker record, to avoid writing to the development data.
 - **T-40** first passed by accident: the stack was already ready, so a short limit proved nothing. It was repeated with a service that can't start.
 - **Memory (found by T-38).** Cassandra reserves a quarter of the host's memory by default (7.9 GB here), so two stacks exhausted it and containers of both were killed (`exit 137`), including the development Cassandra. `docker-compose.e2e.yml` now limits Cassandra's heap and SQL Server's memory, and gives Cassandra's healthcheck more retries. With the limits, both stacks ran with no restart.

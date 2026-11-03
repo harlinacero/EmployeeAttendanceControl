@@ -1,7 +1,7 @@
 # [002] End-to-end regression tests — Implementation Checklist
 
 > Last reviewed: 2026-11-03
-> Overall: ⚠️ In progress. Everything that can run on this machine passes; CI and the shipping step are pending (§5). The paid assistant check is an accepted risk (§7).
+> Overall: ⚠️ 30 of 32 ACs done, and the PR check is proven on PR #9. Two remain partial: AC-09 (paid assistant check, accepted risk) and AC-28 (the skill's reaction to a failure, §5).
 
 ## 1. Acceptance criteria
 "E2E" means it passed in the final `run-e2e.ps1` run (§4). "Manual" means it was run on 2026-11-03, with the result noted.
@@ -32,10 +32,10 @@
 | AC-22 | UC-03 main 5 | ✅ | E2E `ByDateRangeShouldRejectInvalidRange` (2 cases) | `AttendanceFlowTests` |
 | AC-23 | UC-03 A2 | ✅ | E2E `HistoryShouldBeReadableByAnotherUser` | `AccessTests` |
 | AC-24 | UC-03 E1 | ✅ | `CatalogShouldMatchGatewayRoutes` | `GatewayRoutes` |
-| AC-25 | UC-04 main | ❌ | Needs the PR. The workflow exists but has never run | `.github/workflows/e2e.yml` |
-| AC-26 | UC-04 E1 | ❌ | Needs the PR | `.github/workflows/e2e.yml` |
-| AC-27 | UC-05 main | ⚠️ | Skill step written; not yet exercised by shipping a feature | `~/.claude/skills/ship-feature/SKILL.md` |
-| AC-28 | UC-05 E1, E2 | ⚠️ | Runner verified: failing checks and no Docker both give exit 1, with the reason. The skill's reaction is not yet exercised | `~/.claude/skills/ship-feature/SKILL.md` |
+| AC-25 | UC-04 main | ✅ | Manual: PR #9, run 41701340515 passed on `46d7dd2`: total 40, passed 39, failed 0, skipped 1 | `.github/workflows/e2e.yml` |
+| AC-26 | UC-04 E1 | ✅ | Manual: temporary failing expectation, run 41702134777 failed and named `LoginShouldReturnTokenForSeededAdmin`, trx artifact available. Reverted: run 41702896463 passed, code identical to `46d7dd2` | `.github/workflows/e2e.yml` |
+| AC-27 | UC-05 main | ✅ | Manual: shipped with the skill on PR #9: the suite ran after the unit tests and its totals are in the PR's "Testing" section | `~/.claude/skills/ship-feature/SKILL.md` |
+| AC-28 | UC-05 E1, E2 | ⚠️ | Runner verified: failing checks and no Docker both give exit 1, with the reason. The skill's reaction (stop and ask) wasn't exercised, because the suite passed when shipping | `~/.claude/skills/ship-feature/SKILL.md` |
 | AC-29 | UC-06 main 1–2 | ✅ | E2E: every run starts from empty volumes. Red on the first run, green after the fix | `cassandra/init.cql` |
 | AC-30 | UC-06 main 3, A1 | ✅ | `SubscribeAsyncShouldRetryUntilBrokerIsAvailable`, `UseRabbitConsumerShouldSubscribeWhenApplicationStarts`; manual: broker down, then up: subscribed without a restart and received the waiting message | `ConsumerSubscriber`, `ConsumerMiddleware`, healthcheck |
 | AC-31 | UC-06 E1 | ✅ | `SubscribeAsyncShouldLogEachFailedAttempt`; manual: "Could not subscribe … on attempt N" in the log | `ConsumerSubscriber` |
@@ -48,14 +48,14 @@
 | T-02…T-06 | ✅ | Red: `Fact` not found. Green after the split; evaluated properties and packages identical; placeholder removed |
 | T-07…T-14 | ✅ | Red: types missing. Green: 10 stack-free tests |
 | T-15, T-16 | ✅ | `compose config`: only port 19000, no container names, own volumes, network and images |
-| T-17 | ✅ | Exercised on Windows PowerShell 5.1. **Not run on `pwsh` 7** (§7) |
+| T-17 | ✅ | Exercised on Windows PowerShell 5.1, and on `pwsh` on Linux in CI |
 | T-18…T-34 | ✅ | Red: support types missing. Green in the final run |
 | T-35 | ⚠️ | Not-requested and no-key cases done. Real key case not run: accepted risk, your decision of 2026-11-03 |
 | T-36…T-42 | ✅ | See AC-01…AC-07, AC-17. T-38 compared counts instead of inserting a marker, to avoid writing to the dev data |
-| T-43 | ⚠️ | Written, never run |
-| T-44 | ❌ | Needs push and PR |
+| T-43 | ✅ | Ran on PR #9 |
+| T-44 | ✅ | Passed, failed on purpose, reverted and passed again. See AC-25, AC-26 |
 | T-45 | ✅ | Step 1b added to the skill |
-| T-46 | ⚠️ | Only the runner's side verified |
+| T-46 | ⚠️ | Passing path done on PR #9. The failing and no-Docker reactions of the skill weren't exercised |
 | T-47…T-49 | ✅ | Docs updated |
 | T-50 | ✅ | §4 |
 | T-51…T-58 | ✅ | Red: `ConsumerSubscriber` missing. Green: 7 tests |
@@ -85,8 +85,8 @@ SKIPPED ChatShouldReturnAnAnswer: assistant check not requested
 ```
 
 ## 5. Missing / pending
-- ❌ **T-44 / AC-25, AC-26** — the workflow's first run. Needs your approval to commit, push and open the PR.
-- ⚠️ **T-46 / AC-27, AC-28** — the shipping step, exercised when this feature ships.
+- ⚠️ **T-46 / AC-28** — the skill's reaction to a failing check or to Docker being stopped. It will be exercised the first time that happens when shipping.
+- **Merge** — PR #9 is open, for you to review and merge.
 
 ## 6. Deviations from spec
 All recorded in the specs or in the notes of `03-tasks.md`.
@@ -99,8 +99,8 @@ All recorded in the specs or in the notes of `03-tasks.md`.
 
 ## 7. Risks & follow-ups
 - **Accepted risk: the real assistant check has never passed (T-35 / AC-09).** It calls a paid service, and you decided on 2026-11-03 not to run it. The check itself is unproven, so a broken assistant flow wouldn't be detected by a normal run.
-- **`pwsh` 7 and Linux are untested.** CI will be the script's first run there, so the first PR run may need adjustments. Installing `pwsh` locally covers only part of it.
-- **CI memory and time are unproven.** The limits should fit a 7 GB runner, but that hasn't been measured.
+- **On `pwsh` and Linux only the CI paths have run**: passing and failing checks. `-KeepEnvironment`, a service that can't start and a killed run were verified only on Windows PowerShell 5.1.
+- **CI time:** the job took about 4 minutes in all three runs. Memory use wasn't measured; the runs just didn't fail.
 - **Dev volume has a leftover table `kusers."User"`.** It's why the dev stack never showed defect 1. It's no longer used and could be dropped in a separate change.
 - **`ms.sql.employees.db` showed `restarts=1` in the dev stack seconds after starting**, before the suite ran. Not investigated; the suite didn't affect it.
 - **Messages can be lost:** consumers use `autoAck: true`, so a message whose processing fails after delivery is gone. Only `JsonException` is caught. Separate feature.

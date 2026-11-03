@@ -43,6 +43,8 @@ The service uses `CassandraCSharpDriver` and `Cassandra.Mapping`. The `User` ent
 
 ## RabbitMQ
 
+If the broker isn't accepting connections when the service starts, the consumer keeps trying and logs each failed attempt (see [`ms.communications`](../ms.communications/README.md)).
+
 `ms.users.api` consumes the `EmployeeCreateEvent` queue from the host configured in `Communication:EventBus:HostName`.
 
 When `ms.employees` publishes an employee creation event, `UserConsumer` receives it and executes `CreateUserAccountCommand` to create the corresponding user in Cassandra.

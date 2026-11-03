@@ -44,6 +44,8 @@ The service uses `MongoDB.Driver`. The collection is obtained from configuration
 
 ## RabbitMQ
 
+If the broker isn't accepting connections when the service starts, the consumer keeps trying and logs each failed attempt, and then receives the messages that were waiting (see [`ms.communications`](../ms.communications/README.md)).
+
 `AttendancesConsumer` consumes the `AttendanceStateChangedEvent` queue from `ms.rabbitmq.bus`.
 
 When `ms.employees.api` changes the attendance state, it publishes that event. The consumer transforms it into a `CreateAttendanceCommand` and saves the record in MongoDB.

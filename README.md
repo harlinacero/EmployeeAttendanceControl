@@ -61,7 +61,7 @@ The solution uses NuGet Central Package Management (`Directory.Packages.props` a
 | Applies to | Settings |
 |------------|----------|
 | Every `.csproj` | `TargetFramework` `net10.0`, `ImplicitUsings`, `Nullable` enabled (the application/domain/infrastructure layers turn it off in their own `.csproj`) |
-| Test projects (name ends in `.test`) | `IsPackable=false`, xUnit, xUnit runner, test SDK, Moq, coverlet, global `using Xunit` |
+| Test projects (name ends in `.test`) | `IsPackable=false`, xUnit, xUnit runner, test SDK, Moq, coverlet, global `using Xunit`. `dotnet test` runs them unless the project sets `IsTestProject=false`, as the end-to-end project does |
 | Web APIs (`Microsoft.NET.Sdk.Web`) | Docker tooling: Linux target, repository root as build context, path to `docker-compose.dcproj` |
 
 A value set in a `.csproj` overrides the shared one. The Dockerfiles copy `Directory.Build.props` and `Directory.Packages.props` before `dotnet restore`. After pulling these files, reload the solution in Visual Studio.
@@ -223,12 +223,27 @@ Settings (`ms.assistant/ms.assistant.api/appsettings.json`):
 
 Every question costs tokens. Each answer logs its token usage (without the question or answer text). The design is in `ms.assistant/features/001-ai-attendance-assistant/`.
 
+## End-to-end regression tests
+
+Unit tests fake every collaborator, so nothing in them checks that the services still work together. The regression suite does: it starts a throwaway copy of the whole system, calls every operation through the gateway like a client does, follows the complete attendance flow, and destroys the copy and its data.
+
+```powershell
+powershell -File e2e/run-e2e.ps1     # or: pwsh e2e/run-e2e.ps1
+```
+
+- It runs alongside the development stack without touching it: compose project `eac-e2e`, with only port `19000` published.
+- `dotnet test EmployeeAttendanceControl.sln` doesn't run it and doesn't need Docker.
+- GitHub Actions runs it on every pull request to `master` (`.github/workflows/e2e.yml`), without the paid assistant check.
+- A new or changed gateway route also updates `e2e/EmployeeAttendanceControl.e2e.test/Catalog/GatewayRoutes.cs`, or the suite fails.
+
+Parameters, coverage and how to add a check: [`e2e/README.md`](e2e/README.md).
+
 ## Docker Compose
 
 The project separates common configuration from local configuration:
 
 - `docker-compose.yml`: base configuration. Defines the images and `Dockerfile`s for the services.
-- `docker-compose.override.yml`: development configuration. Defines local ports, environment variables, data volumes, and dependencies.
+- `docker-compose.override.yml`: development configuration. Defines local ports, environment variables, data volumes, and dependencies. The broker counts as healthy only once port `5672` accepts connections, and consumers also keep trying until they can subscribe (see [`ms.communications`](ms.communications/README.md)).
 
 When `docker compose` is run without specifying files, Compose automatically loads `docker-compose.yml` and `docker-compose.override.yml` and merges their configurations.
 

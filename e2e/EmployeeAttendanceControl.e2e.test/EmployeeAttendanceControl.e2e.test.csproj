@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Runs only with -p:RunE2E=true, so the regular "dotnet test" of the solution skips it -->
+  <PropertyGroup>
+    <IsTestProject Condition="'$(RunE2E)' != 'true'">false</IsTestProject>
+  </PropertyGroup>
+
+  <!-- The catalog check compares GatewayRoutes with the routes the gateway really exposes -->
+  <ItemGroup>
+    <None Include="..\..\ms.gateway\ms.gateway.api\ocelot.json" Link="ocelot.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

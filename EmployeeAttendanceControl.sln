@@ -89,6 +89,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.assistant.application.te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.assistant.infraestucture.test", "ms.assistant\ms.assistant.test\ms.assistant.infraestucture.test\ms.assistant.infraestucture.test.csproj", "{54D14408-91FB-4CCC-A5A0-85963DC01D23}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "e2e", "e2e", "{36695022-115B-4ABA-B650-0F2673D85EB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmployeeAttendanceControl.e2e.test", "e2e\EmployeeAttendanceControl.e2e.test\EmployeeAttendanceControl.e2e.test.csproj", "{E2B696DE-540A-4AE2-A941-56F148ABAE70}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ms.communications.test", "ms.communications.test", "{9C2D1F34-6B7E-4A10-8E52-3F1A7C5D2B60}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ms.rabbitmq.test", "ms.communications\ms.communications.test\ms.rabbitmq.test\ms.rabbitmq.test.csproj", "{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -479,6 +487,30 @@ Global
 		{54D14408-91FB-4CCC-A5A0-85963DC01D23}.Release|x64.Build.0 = Release|Any CPU
 		{54D14408-91FB-4CCC-A5A0-85963DC01D23}.Release|x86.ActiveCfg = Release|Any CPU
 		{54D14408-91FB-4CCC-A5A0-85963DC01D23}.Release|x86.Build.0 = Release|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Debug|x64.Build.0 = Debug|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Debug|x86.Build.0 = Debug|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Release|x64.ActiveCfg = Release|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Release|x64.Build.0 = Release|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Release|x86.ActiveCfg = Release|Any CPU
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70}.Release|x86.Build.0 = Release|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Debug|x64.Build.0 = Debug|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Debug|x86.Build.0 = Debug|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Release|x64.ActiveCfg = Release|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Release|x64.Build.0 = Release|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Release|x86.ActiveCfg = Release|Any CPU
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -520,6 +552,9 @@ Global
 		{54D14408-91FB-4CCC-A5A0-85963DC01D23} = {970CA046-6ECF-7448-9546-58695802FC9C}
 		{970CA046-6ECF-7448-9546-58695802FC9C} = {477A94D9-0430-49AA-0691-E3A1C4C91821}
 		{87E343DB-942E-231C-F477-BEB96CA511F5} = {F41D9D01-A807-4D38-F1DC-C859839BA31E}
+		{E2B696DE-540A-4AE2-A941-56F148ABAE70} = {36695022-115B-4ABA-B650-0F2673D85EB6}
+		{9C2D1F34-6B7E-4A10-8E52-3F1A7C5D2B60} = {5CA9E2A2-40FE-4720-96D4-5D8450303259}
+		{B7E41A92-3D5C-4F86-A1C7-92D6E8F03B14} = {9C2D1F34-6B7E-4A10-8E52-3F1A7C5D2B60}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BF64BB30-14F1-40F0-B6C2-EA9D7522CA59}

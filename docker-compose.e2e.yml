@@ -1,0 +1,59 @@
+# Applied after docker-compose.yml and docker-compose.override.yml by e2e/run-e2e.ps1, with project name eac-e2e.
+# It lets the run coexist with the development stack: no fixed container names, no published ports except the
+# gateway's, and its own image tags. Volumes and the network get the eac-e2e prefix from the project name.
+# !reset and !override need Docker Compose 2.24 or later.
+services:
+  ms.rabbitmq.bus:
+    container_name: !reset null
+    ports: !reset []
+
+  ms.mongo.attendances.db:
+    container_name: !reset null
+    ports: !reset []
+
+  # By default Cassandra reserves a quarter of the host's memory. A second copy next to the development stack
+  # exhausts it and the system kills containers of both stacks. It also has to fit on a CI runner.
+  ms.cassandra.db:
+    image: eac-e2e/cassandra
+    container_name: !reset null
+    ports: !reset []
+    environment:
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    healthcheck:
+      retries: 30
+
+  ms.sql.employees.db:
+    image: eac-e2e/mssql-server
+    container_name: !reset null
+    ports: !reset []
+    environment:
+      MSSQL_MEMORY_LIMIT_MB: 2048
+
+  ms.employees.api:
+    image: eac-e2e/msemployeesapi
+    container_name: !reset null
+    ports: !reset []
+
+  ms.users.api:
+    image: eac-e2e/msusersapi
+    container_name: !reset null
+    ports: !reset []
+
+  ms.attendances.api:
+    image: eac-e2e/msattendancesapi
+    container_name: !reset null
+    ports: !reset []
+
+  ms.assistant.api:
+    image: eac-e2e/msassistantapi
+    container_name: !reset null
+    ports: !reset []
+    environment:
+      - "Anthropic:ApiKey=${ANTHROPIC_API_KEY:-e2e-assistant-disabled}"
+
+  ms.gateway.api:
+    image: eac-e2e/msgatewayapi
+    container_name: !reset null
+    ports: !override
+      - "${E2E_GATEWAY_PORT:-19000}:80"

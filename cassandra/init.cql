@@ -8,6 +8,6 @@ CREATE TABLE IF NOT EXISTS kusers.user
     user_role text
 );
 
-INSERT INTO kusers."User" (user_username, user_pasword, user_role)
+INSERT INTO kusers.user (user_username, user_pasword, user_role)
 VALUES ('admin', '1234', 'admin')
 IF NOT EXISTS;

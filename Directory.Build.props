@@ -6,15 +6,17 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<IsTestProject Condition="$(MSBuildProjectName.EndsWith('.test'))">true</IsTestProject>
+		<UsesTestDefaults Condition="$(MSBuildProjectName.EndsWith('.test'))">true</UsesTestDefaults>
+		<IsTestProject Condition="'$(UsesTestDefaults)' == 'true'">true</IsTestProject>
 	</PropertyGroup>
 
-	<!-- Test projects: the project name ends in .test -->
-	<PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+	<!-- Test projects: the project name ends in .test. A project can set IsTestProject=false
+	to stay out of "dotnet test" and keep these defaults (see e2e/) -->
+	<PropertyGroup Condition="'$(UsesTestDefaults)' == 'true'">
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
-	<ItemGroup Condition="'$(IsTestProject)' == 'true'">
+	<ItemGroup Condition="'$(UsesTestDefaults)' == 'true'">
 		<PackageReference Include="coverlet.collector" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" />
 		<PackageReference Include="Moq" />

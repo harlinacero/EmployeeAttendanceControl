@@ -8,7 +8,7 @@ The main project is `ms.rabbitmq` and is organized into:
 
 - `Events`: `IRabbitMqEvent` and `EventBase` contracts for serializable events.
 - `Producers`: `IProducer` and `EventProducer` for publishing messages.
-- `Consumers`: `IConsumer`, subscription and cancellation contract.
+- `Consumers`: `IConsumer`, subscription and cancellation contract, and `ConsumerSubscriber`, which subscribes it and tries again until the broker accepts connections.
 - `Middlewares`: `UseRabbitConsumer`, which connects the ASP.NET Core lifecycle to `Subscribe` and `Unsubscribe`.
 
 ## Communication model
@@ -20,6 +20,8 @@ The implementation uses RabbitMQ queues directly, without custom exchanges:
 3. It serializes the event as JSON.
 4. It publishes to the default exchange (`""`) using the queue as the routing key.
 5. The consumer declares the same queue and consumes its messages.
+
+A service that starts before the broker doesn't lose its subscription: `UseRabbitConsumer` tries every 5 seconds, logs each failed attempt as a warning, and stops trying when the application stops. Once connected, `RabbitMQ.Client`'s automatic recovery handles later broker restarts. Tests are in `ms.communications.test/ms.rabbitmq.test`.
 
 RabbitMQ runs in Docker as `ms.rabbitmq.bus`, with AMQP on port `5672` and the management UI at `http://localhost:15672`.
 

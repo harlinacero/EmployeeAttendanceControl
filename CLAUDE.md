@@ -18,7 +18,7 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 - .NET 10, file-scoped classes in block namespaces (`namespace x { ... }`), one class per file, namespace = folder path
 - CQRS with MediatR: queries/commands are `record`s implementing `IRequest<T>` (e.g. `GetAllAttendancesQuery(string UserName)`); handlers in `Queries/Handlers` / `Commands/Handlers` named `<Name>Handler`
 - Controllers are thin: `[ApiController]`, `[Route("[controller]")]`, inject only `IMediator`, return `Ok(await _mediator.Send(...))`; action methods named as nouns (`Attendances`, `Attendance`, `Employees`)
-- Authorization: JWT bearer; `[Authorize]` for any authenticated user, `[Authorize(Roles = "admin")]` for admin-only endpoints; current user from the `ClaimTypes.NameIdentifier` claim
+- Authorization: JWT bearer; `[Authorize]` for any authenticated user, `[Authorize(Roles = "admin")]` for admin-only endpoints; current user from the `ClaimTypes.NameIdentifier` claim. Only ms.users issues tokens (RS256, private key in its `users_keys` volume); every other service and the gateway validate through `Authentication:JWT:Authority` (ms.users' OpenID discovery + JWKS) and must never hold a signing key or secret (`SigningSecretTests` checks it)
 - Constructor injection into `private readonly _camelCase` fields; expression-bodied ctor allowed for a single dependency
 - Mapping with AutoMapper `Profile`s per layer (`AttendanceProfile` in application, `AttendanceMongoProfile` in infrastructure, `EventMapperProfile` in api)
 - Domain entities are plain POCOs; persistence-specific types live in infrastructure (`MongoEntities/AttendanceMongo`)
@@ -54,8 +54,8 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 
 ### Inter-service communication
 - Async: RabbitMQ via `ms.communications/ms.rabbitmq`; queue name = event class name (`nameof(AttendanceStateChangedEvent)`), durable queues; consumers in `<svc>.api/Consumers` implementing `IConsumer`
-- Events: `EmployeeCreateEvent` (employees → users), `AttendanceStateChangedEvent` (employees → attendances)
-- Sync: Refit clients in `<svc>.application/HttpComunications` (e.g. `ms.employees` → `GET /Attendances?userName=` forwarding the caller's `Authorization` header). Changing an existing route/contract breaks these clients.
+- Events: `AttendanceStateChangedEvent` (employees → attendances). Never put a password or a token in an event
+- Sync: Refit clients in `<svc>.application/HttpComunications` (e.g. `ms.employees` → `GET /Attendances?userName=` and `POST /User`, forwarding the caller's `Authorization` header). Changing an existing route/contract breaks these clients.
 - Clients go through `ms.gateway.api` (container `:9000`, local `:9001`), which exposes the same routes as the services. A new or changed endpoint must be added to **both** `ocelot.json` and `ocelot.Local.json` (same order), with `AuthenticationOptions` `Bearer` unless anonymous and `RouteClaimsRequirement { "role": "admin" }` for admin-only; `OcelotRoutesTests` keeps the catalog in sync. It also updates `e2e/EmployeeAttendanceControl.e2e.test/Catalog/GatewayRoutes.cs`, or `CatalogShouldMatchGatewayRoutes` fails. Service-to-service calls stay direct (not through the gateway). Services remain reachable directly on `:9009`/`:9010`/`:9020`
 
 ### Commands
@@ -71,7 +71,8 @@ Employee attendance control system built as .NET 10 microservices (ms.users, ms.
 
 ### Business glossary & rules
 - **Employee**: a person managed by ms.employees (SQL `dbo.Employee`), identified by `UserName`; holds the current attendance state (`LastAttendanceState/Date/Notes`)
-- **User / account**: login credentials + `Role` in ms.users (Cassandra), created automatically from `EmployeeCreateEvent`; issues the JWT
+- **User / account**: login credentials + `Role` in ms.users (Cassandra), created by ms.employees in the same operation as the employee (direct `POST /User`); the password is stored only as a PBKDF2 hash and never returned
+- **Session**: one sign-in on one device. Login returns a short access token (15 min) and a single-use refresh token; renewing spends it, reusing a spent one revokes the session; logout ends only the current session
 - **Role**: `admin` or regular user (claim `ClaimTypes.Role`); admin manages employees and users
 - **Attendance (record)**: one historical entry in ms.attendances (`AttendanceRecord`: `UserName`, `FullName`, `Date`, `Attendance` true=present/false=absent, `Notes`), stored in Mongo `DbHistoricalAttendance.Attendances`
 - **Attendance state change**: employee marks attendance in ms.employees → `AttendanceStateChangedEvent` → a new record in the history

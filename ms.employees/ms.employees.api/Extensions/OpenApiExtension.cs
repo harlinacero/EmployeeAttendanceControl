@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using ms.employees.application.Extensions;
-using System.Text;
 
 namespace ms.employees.api.Extensions
 {
@@ -84,17 +83,39 @@ namespace ms.employees.api.Extensions
                 option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(options =>
             {
+                options.Authority = authentication.JWT.Authority;
                 options.RequireHttpsMetadata = false;
+                // After a key change, an unknown key id makes it download ms.users' keys again, at most every 30 s
+                options.RefreshInterval = TimeSpan.FromSeconds(30);
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
+                    ValidateIssuer = true,
                     ValidateAudience = false,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authentication.JWT.Key)),
+                    ValidAlgorithms = [SecurityAlgorithms.RsaSha256],
                     ValidateLifetime = true,
                     RequireExpirationTime = true,
                     ClockSkew = TimeSpan.Zero
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    // Without this, failing to download the keys becomes a 500 instead of a rejected token
+                    OnAuthenticationFailed = context =>
+                    {
+                        context.Fail(context.Exception);
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+            // Without this, a token signed with a replaced key keeps being accepted for up to an hour,
+            // validated against the previous keys ("last known good" configuration)
+            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                if (options.ConfigurationManager is BaseConfigurationManager configurationManager)
+                {
+                    configurationManager.UseLastKnownGoodConfiguration = false;
+                }
             });
 
             return services;

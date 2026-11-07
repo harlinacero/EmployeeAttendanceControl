@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,14 +7,14 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using ms.gateway.api.Extensions;
-using System.Text;
+using Microsoft.AspNetCore.Http;
 using GatewayExtensions = ms.gateway.api.Extensions.Extensions;
 
 namespace ms.gateway.api.test.Extensions
 {
     public class ExtensionsTests : IDisposable
     {
-        private const string TestJwtKey = "unit-test-signing-value-for-gateway-extensions";
+        private const string TestAuthority = "http://ms.users.api";
 
         private readonly Mock<IHostEnvironment> _hostEnvironmentMock;
         private readonly string _contentRoot;
@@ -41,7 +41,14 @@ namespace ms.gateway.api.test.Extensions
         {
             var services = new ServiceCollection();
             services.AddOptions<SettingsOptions>().Configure(options =>
-                options.Authentication = new Authentication { JWT = new JWT { Key = TestJwtKey } });
+                options.Authentication = new Authentication { JWT = new JWT { Authority = TestAuthority } });
+            return services;
+        }
+
+        private static ServiceCollection CreateServicesWithGatewayAuthentication()
+        {
+            var services = CreateServicesWithSettings();
+            services.AddGatewayAuthentication();
             return services;
         }
 
@@ -107,7 +114,35 @@ namespace ms.gateway.api.test.Extensions
         }
 
         [Fact]
-        public void AddGatewayAuthenticationShouldValidateSignatureWithConfiguredKey()
+        public void AddGatewayAuthenticationShouldUseConfiguredAuthority()
+        {
+            // Arrange
+            var services = CreateServicesWithSettings();
+
+            // Act
+            services.AddGatewayAuthentication();
+
+            // Assert
+            var options = GetBearerOptions(services);
+            Assert.Equal(TestAuthority, options.Authority);
+            Assert.Null(options.TokenValidationParameters.IssuerSigningKey);
+        }
+
+        [Fact]
+        public void AddGatewayAuthenticationShouldAllowOnlyRs256()
+        {
+            // Arrange
+            var services = CreateServicesWithSettings();
+
+            // Act
+            services.AddGatewayAuthentication();
+
+            // Assert
+            Assert.Equal([SecurityAlgorithms.RsaSha256], GetBearerOptions(services).TokenValidationParameters.ValidAlgorithms);
+        }
+
+        [Fact]
+        public void AddGatewayAuthenticationShouldValidateIssuer()
         {
             // Arrange
             var services = CreateServicesWithSettings();
@@ -117,9 +152,9 @@ namespace ms.gateway.api.test.Extensions
 
             // Assert
             var parameters = GetBearerOptions(services).TokenValidationParameters;
+            Assert.True(parameters.ValidateIssuer);
             Assert.True(parameters.ValidateIssuerSigningKey);
-            var key = Assert.IsType<SymmetricSecurityKey>(parameters.IssuerSigningKey);
-            Assert.Equal(Encoding.UTF8.GetBytes(TestJwtKey), key.Key);
+            Assert.False(parameters.ValidateAudience);
         }
 
         [Fact]
@@ -139,6 +174,49 @@ namespace ms.gateway.api.test.Extensions
         }
 
         [Fact]
+        public void AddGatewayAuthenticationShouldRejectTokensOfReplacedKeys()
+        {
+            // Act
+            var options = GetBearerOptions(CreateServicesWithGatewayAuthentication());
+
+            // Assert
+            var manager = Assert.IsAssignableFrom<BaseConfigurationManager>(options.ConfigurationManager);
+            Assert.False(manager.UseLastKnownGoodConfiguration);
+        }
+
+        [Fact]
+        public void AddGatewayAuthenticationShouldRefreshKeysAfterThirtySeconds()
+        {
+            // Arrange
+            var services = CreateServicesWithSettings();
+
+            // Act
+            services.AddGatewayAuthentication();
+
+            // Assert
+            Assert.Equal(TimeSpan.FromSeconds(30), GetBearerOptions(services).RefreshInterval);
+        }
+
+        [Fact]
+        public async Task AddGatewayAuthenticationShouldFailInsteadOfThrowingWhenKeysAreUnavailable()
+        {
+            // Arrange
+            var services = CreateServicesWithSettings();
+            services.AddGatewayAuthentication();
+            var options = GetBearerOptions(services);
+            var context = new AuthenticationFailedContext(new DefaultHttpContext(), new AuthenticationScheme("Bearer", null, typeof(JwtBearerHandler)), options)
+            {
+                Exception = new InvalidOperationException("IDX20803: Unable to obtain configuration")
+            };
+
+            // Act
+            await options.Events.AuthenticationFailed(context);
+
+            // Assert
+            Assert.NotNull(context.Result?.Failure);
+        }
+
+        [Fact]
         public void AddGatewayAuthenticationShouldKeepShortClaimNames()
         {
             // Arrange
@@ -149,21 +227,6 @@ namespace ms.gateway.api.test.Extensions
 
             // Assert
             Assert.False(GetBearerOptions(services).MapInboundClaims);
-        }
-
-        [Fact]
-        public void AddGatewayAuthenticationShouldNotValidateIssuerOrAudience()
-        {
-            // Arrange
-            var services = CreateServicesWithSettings();
-
-            // Act
-            services.AddGatewayAuthentication();
-
-            // Assert
-            var parameters = GetBearerOptions(services).TokenValidationParameters;
-            Assert.False(parameters.ValidateIssuer);
-            Assert.False(parameters.ValidateAudience);
         }
     }
 }

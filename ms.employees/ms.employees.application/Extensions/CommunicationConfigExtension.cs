@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Refit;
 
 using ms.employees.application.HttpComunications;
@@ -20,6 +20,12 @@ namespace ms.employees.application.Extensions
             services.AddRefitClient<IAttendanceApiCommunication>().ConfigureHttpClient(c => 
                 c.BaseAddress = new Uri(communitationSettings.External.AttendanceApiUrl)
             );
+            // Account creation is part of creating an employee, so it can't wait as long as the default 100 s
+            services.AddRefitClient<IUsersApiCommunication>().ConfigureHttpClient(c =>
+            {
+                c.BaseAddress = new Uri(communitationSettings.External.UsersApiUrl);
+                c.Timeout = TimeSpan.FromSeconds(10);
+            });
 
             services.AddAutoMapper(mapperConfig => mapperConfig.AddMaps(typeof(EmployeesMapperProfile).Assembly));
 

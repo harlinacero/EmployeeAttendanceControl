@@ -82,7 +82,7 @@ function Wait-Ready {
     while ($true) {
         $login = Test-Probe -Method 'Post' -Path '/Authentication' -Body $body
         if ($login) {
-            $token = ([string]$login.Content).Trim()
+            $token = ([string]$login.Content | ConvertFrom-Json).accessToken
             $pending.Remove($authentication)
             if ($pending.Contains($employees) -and (Test-Probe -Method 'Get' -Path '/Employees' -Token $token)) {
                 $pending.Remove($employees)

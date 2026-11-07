@@ -1,6 +1,7 @@
 # Applied after docker-compose.yml and docker-compose.override.yml by e2e/run-e2e.ps1, with project name eac-e2e.
-# It lets the run coexist with the development stack: no fixed container names, no published ports except the
-# gateway's, and its own image tags. Volumes and the network get the eac-e2e prefix from the project name.
+# It lets the run coexist with the development stack: no fixed container names, its own published ports (the
+# gateway's and the services', all different from development) and its own image tags. Volumes, including the
+# signing key's, and the network get the eac-e2e prefix from the project name.
 # !reset and !override need Docker Compose 2.24 or later.
 services:
   ms.rabbitmq.bus:
@@ -33,22 +34,29 @@ services:
   ms.employees.api:
     image: eac-e2e/msemployeesapi
     container_name: !reset null
-    ports: !reset []
+    # Published to prove that the service validates tokens on its own (SigningTests)
+    ports: !override
+      - "${E2E_EMPLOYEES_PORT:-19010}:80"
 
   ms.users.api:
     image: eac-e2e/msusersapi
     container_name: !reset null
-    ports: !reset []
+    # Published to prove that the service validates tokens on its own (SigningTests)
+    ports: !override
+      - "${E2E_USERS_PORT:-19009}:80"
 
   ms.attendances.api:
     image: eac-e2e/msattendancesapi
     container_name: !reset null
-    ports: !reset []
+    # Published to prove that the service validates tokens on its own (SigningTests)
+    ports: !override
+      - "${E2E_ATTENDANCES_PORT:-19020}:80"
 
   ms.assistant.api:
     image: eac-e2e/msassistantapi
     container_name: !reset null
-    ports: !reset []
+    ports: !override
+      - "${E2E_ASSISTANT_PORT:-19030}:80"
     environment:
       - "Anthropic:ApiKey=${ANTHROPIC_API_KEY:-e2e-assistant-disabled}"
 

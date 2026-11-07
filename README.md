@@ -8,8 +8,8 @@ The project is organized as a .NET 10 microservices solution. Each service has i
 
 ### Components
 
-- **ms.gateway**: API gateway (Ocelot). The single entry point for clients: it forwards each request to the service that handles it, after checking the JWT and, for admin-only operations, the `admin` role. It has no persistence.
-- **ms.users**: authentication, users, and JWT token issuance. Uses Cassandra.
+- **ms.gateway**: API gateway (Ocelot). The single entry point for clients: it forwards each request to the service that handles it, after checking the JWT with `ms.users`' public key and, for admin-only operations, the `admin` role. It has no persistence. See [`ms.gateway/README.md`](ms.gateway/README.md).
+- **ms.users**: authentication, sessions, users, and token issuance. It is the only service that can issue tokens. Uses Cassandra.
 - **ms.employees**: employee management and current attendance state. Uses SQL Server.
 - **ms.attendances**: attendance history. Uses MongoDB.
 - **ms.assistant**: AI assistant (Claude). Answers attendance questions in natural language by calling the other services with the caller's token. Read-only, no persistence.
@@ -19,6 +19,44 @@ The project is organized as a .NET 10 microservices solution. Each service has i
 
 Each API is internally split into `api`, `application`, `domain`, and `infraestructure` layers when it needs persistence. The APIs expose HTTP and Swagger, and use JWT for authentication and authorization.
 
+### Authentication
+
+- **Sign-in** (`POST /Authentication`) returns an access token valid for 15 minutes and a single-use refresh token. `POST /Authentication/Refresh` exchanges the refresh token for a new pair; presenting one that was already used revokes that session. `POST /Authentication/Logout` ends the current session only. A person can have several sessions, which end after 7 days without renewal or 30 days after sign-in.
+- **Only ms.users can issue tokens.** It signs them with RS256 using a private key kept in its `users_keys` volume, and publishes the public key at `/.well-known/openid-configuration` and `/.well-known/jwks.json`. The gateway and the other services download that key (`Authentication:JWT:Authority`) and can check tokens, but hold nothing that could create one.
+- **Passwords** are stored only as PBKDF2 hashes, and are never returned, logged, or sent through RabbitMQ.
+
+How a token is issued and checked:
+
+```mermaid
+sequenceDiagram
+	autonumber
+	actor Client as Client
+	participant Gateway as ms.gateway.api
+	participant Users as ms.users.api
+	participant Service as Any other service
+
+	Client->>Gateway: POST /Authentication
+	Gateway->>Users: POST /Authentication
+	Users->>Users: Check PBKDF2 hash, start session,<br/>sign access token with the private key (RS256)
+	Users-->>Client: accessToken (15 min) + refreshToken
+
+	Client->>Gateway: Request + access token
+	opt First token seen, or unknown key id (at most every 30 s)
+		Gateway->>Users: GET /.well-known/openid-configuration, /.well-known/jwks.json
+		Users-->>Gateway: Issuer and public key
+	end
+	Gateway->>Gateway: Verify signature, issuer and expiry
+	Gateway->>Service: Request + same token
+	Service->>Service: Verify again with its own copy of the public key
+	Service-->>Client: Response
+
+	Client->>Gateway: POST /Authentication/Refresh (refreshToken)
+	Gateway->>Users: POST /Authentication/Refresh
+	Users-->>Client: New pair, the presented token is spent
+```
+
+Details in [`ms.users/README.md`](ms.users/README.md).
+
 ### Gateway routes
 
 `ms.gateway.api` exposes the same routes as the services, so a client only changes the host and port. The services keep validating the token themselves, and remain reachable directly on their own ports.
@@ -26,6 +64,8 @@ Each API is internally split into `api`, `application`, `domain`, and `infraestr
 | Method | Route | Service | Auth at gateway |
 |--------|-------|---------|-----------------|
 | POST | `/Authentication` | ms.users | none |
+| POST | `/Authentication/Refresh` | ms.users | none |
+| POST | `/Authentication/Logout` | ms.users | none |
 | GET | `/User` | ms.users | `admin` |
 | POST | `/User` | ms.users | `admin` |
 | GET | `/Employees` | ms.employees | `admin` |
@@ -71,11 +111,10 @@ A value set in a `.csproj` overrides the shared one. The Dockerfiles copy `Direc
 ```mermaid
 flowchart TB
 	Client[HTTP Client / Swagger]
-	Gateway[ms.gateway.api
-API gateway - Ocelot]
+	Gateway[ms.gateway.api\nAPI gateway - Ocelot\nvalidates tokens]
 
 	subgraph Services[Microservices]
-		Users[ms.users.api\nAuthentication and users]
+		Users[ms.users.api\nAuthentication, sessions and users\nonly issuer of tokens]
 		Employees[ms.employees.api\nEmployees and current state]
 		Attendances[ms.attendances.api\nAttendance history]
 		Assistant[ms.assistant.api\nAI assistant]
@@ -87,46 +126,52 @@ API gateway - Ocelot]
 	end
 
 	subgraph Data[Persistence]
-		Cassandra[(Cassandra\nkusers.user)]
+		Cassandra[(Cassandra kusers\nuser, user_session, refresh_token)]
+		Keys[(users_keys volume\nRSA private key)]
 		Sql[(SQL Server\nEmployeesAttendance.Employee)]
 		Mongo[(MongoDB\nDbHistoricalAttendance.Attendances)]
 	end
 
 	Client -->|All requests :9000| Gateway
-	Client -.->|Direct access :9009 / :9010 / :9020| Services
+	Client -.->|Direct access :9009 / :9010 / :9020 / :9030| Services
 	Gateway -->|/Authentication, /User| Users
 	Gateway -->|/Employees| Employees
 	Gateway -->|/Attendances| Attendances
 	Gateway -->|/Assistant/Chat| Assistant
-	Assistant -->|Refit HTTP GET with caller JWT| Attendances
-	Assistant -->|Refit HTTP GET with caller JWT| Employees
+
+	Gateway -.->|Public key: /.well-known| Users
+	Employees -.->|Public key| Users
+	Attendances -.->|Public key| Users
+	Assistant -.->|Public key| Users
+
+	Employees -->|Refit POST /User with caller token| Users
+	Employees -->|Refit GET /Attendances| Attendances
+	Assistant -->|Refit GET with caller token| Attendances
+	Assistant -->|Refit GET with caller token| Employees
 	Assistant -->|Messages API| Claude[(Anthropic API\nClaude)]
 
-	Users -->|Reads and creates users| Cassandra
+	Users -->|Users, sessions, refresh token hashes| Cassandra
+	Users -->|Signs tokens with| Keys
 	Employees -->|Reads and updates employees| Sql
 	Attendances -->|Reads and saves attendances| Mongo
 
-	Users -.-> Communications
 	Employees -.-> Communications
 	Attendances -.-> Communications
 	Communications -.-> Rabbit
-
-	Employees -->|EmployeeCreateEvent| Rabbit
-	Rabbit -->|EmployeeCreateEvent| Users
 	Employees -->|AttendanceStateChangedEvent| Rabbit
 	Rabbit -->|AttendanceStateChangedEvent| Attendances
-	Employees -->|Refit HTTP GET for attendances| Attendances
 ```
+
+Solid arrows are requests and messages; dotted arrows are the public key download (cached, on the first token) and the use of the shared library.
 
 ### Communication between services
 
-Synchronous communication is done over HTTP. `ms.employees` queries `ms.attendances` with Refit before updating an employee's state.
+Synchronous communication is done over HTTP. `ms.employees` creates the employee's account in `ms.users` (`POST /User`) before saving the employee, and queries `ms.attendances` with Refit before updating an employee's state. Every service downloads `ms.users`' public key to validate tokens.
 
 Asynchronous communication uses RabbitMQ and durable queues:
 
 | Event                          | Publishes       | Consumes          | Purpose                                            |
 | ------------------------------- | -------------- | ---------------- | --------------------------------------------------- |
-| `EmployeeCreateEvent`          | `ms.employees` | `ms.users`        | Create the user account associated with the employee. |
 | `AttendanceStateChangedEvent`  | `ms.employees` | `ms.attendances`  | Save the attendance change in the history.           |
 
 Services connect to RabbitMQ through the DNS name `ms.rabbitmq.bus` inside Docker. The `docker-compose.override.yml` file overrides `appsettings.json` configuration via environment variables.
@@ -150,15 +195,20 @@ sequenceDiagram
 	Client->>Users: POST /Authentication\nusername and password
 	Users->>Cassandra: Look up user in kusers.user
 	Cassandra-->>Users: User and role
-	Users-->>Client: JWT
+	Users->>Cassandra: Start session, store refresh token hash
+	Users-->>Client: Access token (15 min) + refresh token
 
-	Client->>Employees: POST /Employees\nJWT + employee data
+	Client->>Users: POST /Authentication/Refresh\nrefresh token
+	Users->>Cassandra: Spend it, store the new one
+	Users-->>Client: New access token + refresh token
+
+	Client->>Employees: POST /Employees\naccess token + employee data
+	Employees->>Users: POST /User\nAuthorization + account
+	Users->>Cassandra: Create user, password hashed
+	Cassandra-->>Users: Account created
+	Users-->>Employees: Account created
 	Employees->>SQL: Insert employee
 	SQL-->>Employees: Employee created
-	Employees->>Rabbit: Publish EmployeeCreateEvent
-	Rabbit-->>Users: Deliver event
-	Users->>Cassandra: Create associated user
-	Cassandra-->>Users: Account created
 	Employees-->>Client: Creation result
 
 	Client->>Employees: PUT /Employees/AttendanceState/{attendance}\nJWT + notes
@@ -182,7 +232,8 @@ sequenceDiagram
 3. The APIs wait until their required dependencies are available.
 4. SQL Server runs `initsqldatabase.sql` idempotently.
 5. Cassandra runs `cassandra/init.cql` idempotently.
-6. The APIs register their RabbitMQ consumers and start serving requests.
+6. `ms.users` generates its signing key if it has none, protects any readable stored password, and only then starts serving requests.
+7. The other APIs register their RabbitMQ consumers and start serving requests. They download `ms.users`' public key when they receive their first token.
 
 ### ms.assistant (AI assistant)
 
@@ -231,7 +282,7 @@ Unit tests fake every collaborator, so nothing in them checks that the services 
 powershell -File e2e/run-e2e.ps1     # or: pwsh e2e/run-e2e.ps1
 ```
 
-- It runs alongside the development stack without touching it: compose project `eac-e2e`, with only port `19000` published.
+- It runs alongside the development stack without touching it: compose project `eac-e2e`, with ports `19000` (gateway) and `19009`/`19010`/`19020`/`19030` (services, to check that each one validates tokens on its own).
 - `dotnet test EmployeeAttendanceControl.sln` doesn't run it and doesn't need Docker.
 - GitHub Actions runs it on every pull request to `master` (`.github/workflows/e2e.yml`), without the paid assistant check.
 - A new or changed gateway route also updates `e2e/EmployeeAttendanceControl.e2e.test/Catalog/GatewayRoutes.cs`, or the suite fails.
@@ -283,13 +334,13 @@ The gateway can run in two ways. The routes file is chosen by `ASPNETCORE_ENVIRO
 
 | Mode | How to start | Gateway URL | Routes file | Downstream services |
 |------|--------------|-------------|-------------|---------------------|
-| Containers | `docker compose up -d --build` (service `ms.gateway.api`, `ASPNETCORE_ENVIRONMENT=Development`) | `http://localhost:9000` | `ocelot.json` | `ms.users.api:80`, `ms.employees.api:80`, `ms.attendances.api:80` |
-| Local (host) | `dotnet run --project ms.gateway/ms.gateway.api --environment Local`, or the `ms.gateway.api` launch profile | `http://localhost:9001` | `ocelot.Local.json` | `localhost:9009`, `localhost:9010`, `localhost:9020` |
+| Containers | `docker compose up -d --build` (service `ms.gateway.api`, `ASPNETCORE_ENVIRONMENT=Development`) | `http://localhost:9000` | `ocelot.json` | `ms.users.api:80`, `ms.employees.api:80`, `ms.attendances.api:80`, `ms.assistant.api:80` |
+| Local (host) | `dotnet run --project ms.gateway/ms.gateway.api --environment Local`, or the `ms.gateway.api` launch profile | `http://localhost:9001` | `ocelot.Local.json` | `localhost:9009`, `localhost:9010`, `localhost:9020`, `localhost:9030` |
 
 Local mode needs the services running in Compose with their published ports. Example:
 
 ```powershell
-$token = Invoke-RestMethod -Method Post -Uri http://localhost:9000/Authentication -ContentType 'application/json' -Body '{"userName":"admin","password":"1234"}'
+$token = (Invoke-RestMethod -Method Post -Uri http://localhost:9000/Authentication -ContentType 'application/json' -Body '{"userName":"admin","password":"1234"}').accessToken
 Invoke-RestMethod -Uri http://localhost:9000/Employees -Headers @{ Authorization = "Bearer $token" }
 ```
 

@@ -19,11 +19,11 @@ namespace ms.assistant.api.Extensions
 
     public class JWT
     {
+        /// <summary>
+        /// Base URL of ms.users. Its public key is downloaded from there; this service can't issue tokens.
+        /// </summary>
         [Required]
-        public string Key { get; set; } = default!;
-
-        [Required]
-        public int ExpirationHours { get; set; }
+        public string Authority { get; set; } = default!;
     }
 
     public class Communication

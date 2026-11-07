@@ -8,6 +8,20 @@
       "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9009 } ]
     },
     {
+      "UpstreamPathTemplate": "/Authentication/Refresh",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Authentication/Refresh",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9009 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/Authentication/Logout",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Authentication/Logout",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "localhost", "Port": 9009 } ]
+    },
+    {
       "UpstreamPathTemplate": "/User",
       "UpstreamHttpMethod": [ "Get" ],
       "DownstreamPathTemplate": "/User",

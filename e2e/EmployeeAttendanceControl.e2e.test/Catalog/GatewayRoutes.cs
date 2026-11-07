@@ -10,6 +10,8 @@ namespace EmployeeAttendanceControl.e2e.test.Catalog
         public static readonly IReadOnlyList<GatewayRoute> All =
         [
             new(HttpMethod.Post, "/Authentication", AccessGroup.Anonymous, "/Authentication", new { userName = "admin", password = "1234" }),
+            new(HttpMethod.Post, "/Authentication/Refresh", AccessGroup.Anonymous, "/Authentication/Refresh", new { refreshToken = "access-check" }),
+            new(HttpMethod.Post, "/Authentication/Logout", AccessGroup.Anonymous, "/Authentication/Logout", new { refreshToken = "access-check" }),
             new(HttpMethod.Get, "/User", AccessGroup.Admin, "/User"),
             new(HttpMethod.Post, "/User", AccessGroup.Admin, "/User", new { userName = "e2e-access-check", password = "e2e", role = "user" }),
             new(HttpMethod.Get, "/Employees", AccessGroup.Admin, "/Employees"),

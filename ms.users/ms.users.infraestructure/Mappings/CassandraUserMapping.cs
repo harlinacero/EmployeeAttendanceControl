@@ -1,4 +1,4 @@
-﻿using Cassandra.Mapping;
+using Cassandra.Mapping;
 using ms.users.domain.Entities;
 
 namespace ms.users.infraestructure.Mappings
@@ -7,13 +7,11 @@ namespace ms.users.infraestructure.Mappings
     {
         public CassandraUserMapping()
         {
+            // The column keeps its historic name; it now holds the protected form of the password
             For<User>().TableName("user").PartitionKey(u => u.UserName)
                 .Column(u => u.UserName, cc => cc.WithName("user_username"))
-                .Column(u => u.Password, cc => cc.WithName("user_pasword"))
+                .Column(u => u.PasswordHash, cc => cc.WithName("user_pasword"))
                 .Column(u => u.Role, cc => cc.WithName("user_role"));
-
-            // Se asigna configuración global de mapeado
-            MappingConfiguration.Global.Define(this);
         }
     }
 }

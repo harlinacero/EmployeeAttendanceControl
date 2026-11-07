@@ -1,11 +1,11 @@
-﻿using Cassandra.Mapping;
+using Cassandra;
+using Cassandra.Mapping;
 using Moq;
 using ms.users.domain.Entities;
+using ms.users.domain.Exceptions;
 using ms.users.infraestructure.Data;
 using ms.users.infraestructure.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Net;
 
 namespace ms.users.infraestructure.test.Repositories
 {
@@ -18,54 +18,37 @@ namespace ms.users.infraestructure.test.Repositories
         {
             _usserMapperMock = new Mock<IMapper>();
             _usersContexMock = new Mock<IUsersContext>();
+            _usersContexMock.Setup(c => c.GetMapper()).Returns(_usserMapperMock.Object);
         }
+
+        private UserRepository CreateRepository() => new(_usersContexMock.Object);
 
         [Fact]
         public async Task CreateUserShouldReturnUserWhenUserIsCreated()
         {
             // Arrange
-            var user = new User
-            {
-                UserName = "testuser",
-                Password = "password",
-                Role = "admin"
-            };
-            AppliedInfo<User> appliedInfo = new AppliedInfo<User>(true);
+            var user = new User { UserName = "testuser", PasswordHash = "hash", Role = "admin" };
             _usserMapperMock.Setup(m => m.InsertIfNotExistsAsync<User>(user))
-                .ReturnsAsync(appliedInfo);
-            _usersContexMock.Setup(c => c.GetMapper())
-                .Returns(_usserMapperMock.Object);
+                .ReturnsAsync(new AppliedInfo<User>(true));
 
-
-            var userRepository = new UserRepository(_usersContexMock.Object);
-            
             // Act
-            var result = await userRepository.CreateUser(user);
-            
+            var result = await CreateRepository().CreateUser(user);
+
             // Assert
             Assert.Equal(user, result);
         }
 
         [Fact]
-        public async Task CreateUserShouldThrowExceptionWhenUserAlreadyExists()
+        public async Task CreateUserShouldThrowUserAlreadyExistsWhenNotApplied()
         {
             // Arrange
-            var user = new User
-            {
-                UserName = "testuser",
-                Password = "password",
-                Role = "admin"
-            };
-            AppliedInfo<User> appliedInfo = new AppliedInfo<User>(false);
+            var user = new User { UserName = "testuser", PasswordHash = "hash", Role = "admin" };
             _usserMapperMock.Setup(m => m.InsertIfNotExistsAsync<User>(user))
-                .ReturnsAsync(appliedInfo);
-            _usersContexMock.Setup(c => c.GetMapper())
-                .Returns(_usserMapperMock.Object);
-            var userRepository = new UserRepository(_usersContexMock.Object);
+                .ReturnsAsync(new AppliedInfo<User>(false));
 
             // Act & Assert
-            var response = await Assert.ThrowsAsync<Exception>(() => userRepository.CreateUser(user));
-            Assert.Equivalent($"User {user.UserName} already exists in DB", response.Message);
+            var exception = await Assert.ThrowsAsync<UserAlreadyExistsException>(() => CreateRepository().CreateUser(user));
+            Assert.Contains("testuser", exception.Message);
         }
 
         [Fact]
@@ -74,83 +57,86 @@ namespace ms.users.infraestructure.test.Repositories
             // Arrange
             var users = new List<User>
             {
-                new() { UserName = "user1", Password = "password1", Role = "admin" },
-                new() { UserName = "user2", Password = "password2", Role = "user" }
+                new() { UserName = "user1", PasswordHash = "hash1", Role = "admin" },
+                new() { UserName = "user2", PasswordHash = "hash2", Role = "user" }
             };
             _usserMapperMock.Setup(m => m.Fetch<User>())
                 .Returns(users);
-            _usersContexMock.Setup(c => c.GetMapper())
-                .Returns(_usserMapperMock.Object);
-            var userRepository = new UserRepository(_usersContexMock.Object);
+
             // Act
-            var result = await userRepository.GetAllUsers();
+            var result = await CreateRepository().GetAllUsers();
+
             // Assert
             Assert.Equal(users, result);
         }
 
         [Fact]
-        public async Task GetUserShouldReturnUserWhenUserExistsAndPasswordIsCorrect()
+        public async Task GetUserByUserNameShouldQueryLowercasedUserName()
         {
             // Arrange
-            var username = "testuser";
-            var password = "password";
-            var user = new User
-            {
-                UserName = username,
-                Password = password,
-                Role = "admin"
-            };
-            _usserMapperMock.Setup(m => m.FirstOrDefaultAsync<User>(It.IsAny<string>(), It.IsAny<object[]>()))
+            var user = new User { UserName = "testuser", PasswordHash = "hash", Role = "admin" };
+            _usserMapperMock.Setup(m => m.FirstOrDefaultAsync<User>(It.IsAny<string>(), It.Is<object[]>(args => (string)args[0] == "testuser")))
                 .ReturnsAsync(user);
-            _usersContexMock.Setup(c => c.GetMapper())
-                .Returns(_usserMapperMock.Object);
-            var userRepository = new UserRepository(_usersContexMock.Object);
+
             // Act
-            var result = await userRepository.GetUser(username, password);
+            var result = await CreateRepository().GetUserByUserName("TestUser");
+
             // Assert
             Assert.Equal(user, result);
         }
 
         [Fact]
-        public async Task GetUserShouldThrowExceptionWhenUserDoesNotExist()
+        public async Task GetUserByUserNameShouldReturnNullWhenUserDoesNotExist()
         {
             // Arrange
-            var username = "nonexistentuser";
-            var password = "password";
-            var errorMessage = "User not exists";
-
             _usserMapperMock.Setup(m => m.FirstOrDefaultAsync<User>(It.IsAny<string>(), It.IsAny<object[]>()))
-                .ThrowsAsync(new Exception(errorMessage));
-            _usersContexMock.Setup(c => c.GetMapper())
-                .Returns(_usserMapperMock.Object);
-            var userRepository = new UserRepository(_usersContexMock.Object);
+                .ReturnsAsync((User)null!);
 
-            // Act & Assert
-            var response = await Assert.ThrowsAsync<Exception>(() => userRepository.GetUser(username, password));
-            Assert.Equal(errorMessage, response.Message);
+            // Act
+            var result = await CreateRepository().GetUserByUserName("nobody");
+
+            // Assert
+            Assert.Null(result);
         }
 
         [Fact]
-        public async Task GetUserShouldThrowExceptionWhenPasswordIsIncorrect()
+        public async Task GetUserByUserNameShouldThrowDataUnavailableWhenDriverFails()
         {
             // Arrange
-            var username = "testuser";
-            var correctPassword = "correctpassword";
-            var incorrectPassword = "incorrectpassword";
-            var user = new User
-            {
-                UserName = username,
-                Password = correctPassword,
-                Role = "admin"
-            };
             _usserMapperMock.Setup(m => m.FirstOrDefaultAsync<User>(It.IsAny<string>(), It.IsAny<object[]>()))
-                .ReturnsAsync(user);
-            _usersContexMock.Setup(c => c.GetMapper())
-                .Returns(_usserMapperMock.Object);
-            var userRepository = new UserRepository(_usersContexMock.Object);
+                .ThrowsAsync(new NoHostAvailableException(new Dictionary<IPEndPoint, Exception>()));
+
             // Act & Assert
-            var response = await Assert.ThrowsAsync<Exception>(() => userRepository.GetUser(username, incorrectPassword));
-            Assert.Equal("Password is not correct", response.Message);
+            await Assert.ThrowsAsync<DataUnavailableException>(() => CreateRepository().GetUserByUserName("testuser"));
+        }
+
+        [Fact]
+        public async Task GetUserByUserNameShouldThrowDataUnavailableWhenConnectionFails()
+        {
+            // Arrange
+            _usersContexMock.Setup(c => c.GetMapper()).Throws(new NoHostAvailableException(new Dictionary<IPEndPoint, Exception>()));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<DataUnavailableException>(() => CreateRepository().GetUserByUserName("testuser"));
+        }
+
+        [Fact]
+        public async Task ProtectPasswordShouldUpdateOnlyIfValueIsUnchanged()
+        {
+            // Arrange
+            Cql? executed = null;
+            _usserMapperMock.Setup(m => m.UpdateIfAsync<User>(It.IsAny<Cql>()))
+                .Callback((Cql cql) => executed = cql)
+                .ReturnsAsync(new AppliedInfo<User>(true));
+
+            // Act
+            var applied = await CreateRepository().ProtectPassword("admin", "1234", "pbkdf2-sha256$new");
+
+            // Assert
+            Assert.True(applied);
+            Assert.NotNull(executed);
+            Assert.Equal("SET user_pasword = ? WHERE user_username = ? IF user_pasword = ?", executed.Statement);
+            Assert.Equal(["pbkdf2-sha256$new", "admin", "1234"], executed.Arguments);
         }
     }
 }

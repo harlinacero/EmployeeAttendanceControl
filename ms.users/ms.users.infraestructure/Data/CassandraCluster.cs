@@ -1,5 +1,4 @@
 ﻿using Cassandra;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using ms.users.infraestructure.Extensions;
 
@@ -7,7 +6,7 @@ namespace ms.users.infraestructure.Data
 {
     public class CassandraCluster
     {
-        public Cluster ConfiguredCluster { get; set; }
+        public ICluster ConfiguredCluster { get; set; }
 
         public CassandraCluster(IOptions<DatabaseSettings> configuration)
         {

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Ocelot.Configuration.File;
 
 namespace ms.gateway.api.test.Configuration
@@ -17,6 +17,8 @@ namespace ms.gateway.api.test.Configuration
         private static readonly (string Method, string Path, string Service)[] Catalog =
         [
             ("POST", "/Authentication", UsersService),
+            ("POST", "/Authentication/Refresh", UsersService),
+            ("POST", "/Authentication/Logout", UsersService),
             ("GET", "/User", UsersService),
             ("POST", "/User", UsersService),
             ("GET", "/Employees", EmployeesService),
@@ -29,7 +31,13 @@ namespace ms.gateway.api.test.Configuration
         ];
 
         private const string BearerScheme = "Bearer";
-        private static readonly string LoginRoute = Key("POST", "/Authentication");
+        // The credentials, or the refresh token, are the proof: an expired access token mustn't prevent renewing or signing out
+        private static readonly string[] AnonymousRoutes =
+        [
+            Key("POST", "/Authentication"),
+            Key("POST", "/Authentication/Refresh"),
+            Key("POST", "/Authentication/Logout")
+        ];
         private static readonly string[] AdminRoutes =
         [
             Key("GET", "/User"),
@@ -131,24 +139,28 @@ namespace ms.gateway.api.test.Configuration
         }
 
         [Fact]
-        public void LoginRouteShouldNotRequireAuthentication()
+        public void AnonymousRoutesShouldNotRequireAuthentication()
         {
             // Arrange & Act
-            var login = LoadRoutes(ContainerRoutesFile).Routes.Single(route => Key(route) == LoginRoute);
+            var anonymous = LoadRoutes(ContainerRoutesFile).Routes.Where(route => AnonymousRoutes.Contains(Key(route))).ToList();
 
             // Assert
-            Assert.Empty(login.AuthenticationOptions?.AuthenticationProviderKeys ?? []);
-            Assert.Empty(login.RouteClaimsRequirement ?? []);
+            Assert.Equal(AnonymousRoutes.Length, anonymous.Count);
+            Assert.All(anonymous, route =>
+            {
+                Assert.Empty(route.AuthenticationOptions?.AuthenticationProviderKeys ?? []);
+                Assert.Empty(route.RouteClaimsRequirement ?? []);
+            });
         }
 
         [Fact]
         public void ProtectedRoutesShouldRequireBearerAuthentication()
         {
             // Arrange & Act
-            var protectedRoutes = LoadRoutes(ContainerRoutesFile).Routes.Where(route => Key(route) != LoginRoute).ToList();
+            var protectedRoutes = LoadRoutes(ContainerRoutesFile).Routes.Where(route => !AnonymousRoutes.Contains(Key(route))).ToList();
 
             // Assert
-            Assert.Equal(Catalog.Length - 1, protectedRoutes.Count);
+            Assert.Equal(Catalog.Length - AnonymousRoutes.Length, protectedRoutes.Count);
             Assert.All(protectedRoutes, route =>
                 Assert.Equal([BearerScheme], route.AuthenticationOptions.AuthenticationProviderKeys));
         }

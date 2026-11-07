@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ms.employees.application.Commands;
@@ -27,7 +27,7 @@ namespace ms.employees.api.Controllers
         [Authorize(Roles = "admin")]
         [HttpPost]
         public async Task<IActionResult> Employee([FromBody] CreateEmployeeRequest request)
-            => Ok(await _mediator.Send(new CreateEmployeeCommand(request.UserName, request.FirstName, request.LastName, request.Password, request.Role)));
+            => Ok(await _mediator.Send(new CreateEmployeeCommand(request.UserName, request.FirstName, request.LastName, request.Password, request.Role, Request.Headers["Authorization"].ToString())));
 
         [Authorize]
         [HttpPut]

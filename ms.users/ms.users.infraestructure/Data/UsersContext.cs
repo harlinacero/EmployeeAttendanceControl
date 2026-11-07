@@ -1,27 +1,56 @@
-﻿using Cassandra.Mapping;
-using Microsoft.Extensions.Configuration;
+using Cassandra;
+using Cassandra.Mapping;
 using Microsoft.Extensions.Options;
 using ms.users.infraestructure.Extensions;
 using ms.users.infraestructure.Mappings;
-using System.Diagnostics.CodeAnalysis;
 
 namespace ms.users.infraestructure.Data
 {
-    [ExcludeFromCodeCoverage]
-    public class UsersContext : IUsersContext
+    /// <summary>
+    /// One Cassandra session for the whole service (registered as a singleton). It connects on first use, and a failed
+    /// connection isn't remembered: the next call tries again, so the service recovers after Cassandra comes back.
+    /// </summary>
+    public class UsersContext : IUsersContext, IDisposable
     {
-        private readonly IMapper _usersMappers;
-        private readonly CassandraUserMapping _cassandraUserMapping;
+        private readonly ICluster _cluster;
+        private readonly string _keyspace;
+        private readonly MappingConfiguration _mappings;
+        private readonly Lock _connectionLock = new();
+        private ISession _session;
+        private volatile IMapper _usersMapper;
 
-        public UsersContext(CassandraCluster cassandraCluster, CassandraUserMapping cassandraUserMapping, IOptions<DatabaseSettings> configuration)
+        public UsersContext(CassandraCluster cassandraCluster, CassandraUserMapping cassandraUserMapping,
+            CassandraSessionMapping cassandraSessionMapping, IOptions<DatabaseSettings> configuration)
         {
-            var keyspace = configuration.Value.Keyspace;
-            var session = cassandraCluster.ConfiguredCluster.Connect(keyspace);
-            
-            // Create connection instance 
-            _usersMappers = new Mapper(session);
-            _cassandraUserMapping = cassandraUserMapping;
+            _cluster = cassandraCluster.ConfiguredCluster;
+            _keyspace = configuration.Value.Keyspace;
+            _mappings = new MappingConfiguration().Define(cassandraUserMapping, cassandraSessionMapping);
         }
-        public IMapper GetMapper() => _usersMappers;
+
+        public IMapper GetMapper()
+        {
+            if (_usersMapper != null)
+            {
+                return _usersMapper;
+            }
+
+            lock (_connectionLock)
+            {
+                if (_usersMapper == null)
+                {
+                    _session = _cluster.Connect(_keyspace);
+                    _usersMapper = new Mapper(_session, _mappings);
+                }
+
+                return _usersMapper;
+            }
+        }
+
+        public void Dispose()
+        {
+            _session?.Dispose();
+            _cluster.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }

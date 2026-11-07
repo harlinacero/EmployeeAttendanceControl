@@ -4,11 +4,6 @@
     <PackageReference Include="AutoMapper"/>
 	<PackageReference Include="MediatR"/>
     <PackageReference Include="Microsoft.Extensions.Configuration"/>
-	<PackageReference Include="RabbitMQ.Client" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Consumers\UserConsumerTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Moq;
 using ms.employees.application.Commands;
@@ -81,21 +81,6 @@ namespace ms.employees.application.test.Mappers
             Assert.Equal(employeeResponse.LastAttendanceState, employee.LastAttendanceState);
             Assert.Equal(employeeResponse.LastAttendanceNotes, employee.LastAttendanceNotes);
         }
-
-        [Fact]
-        public void EmployeesMapperProfileShouldMapCreateEmployeeCommandToEmployeeCreateEvent()
-        {
-            // Arrange
-            var createEmployeeCommand = new CreateEmployeeCommand("testuser", "Test", "Lastname", "password", "admin");
-            // Act
-            var employeeCreateEvent = _mapper.Map<EmployeeCreateEvent>(createEmployeeCommand);
-            // Assert
-            Assert.Equal(createEmployeeCommand.UserName, employeeCreateEvent.UserName);
-            Assert.Equal(createEmployeeCommand.Password, employeeCreateEvent.Password);
-            Assert.Equal(createEmployeeCommand.Role, employeeCreateEvent.Role);
-        }
-
-      
 
         [Fact]
         public void EmployeesMapperProfileShouldMapEmployeeToAttendanceStateChangedEvent()

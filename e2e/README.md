@@ -35,7 +35,7 @@ dotnet test e2e/EmployeeAttendanceControl.e2e.test -p:RunE2E=true --filter "Full
 
 ## Isolation
 
-- The run uses the compose project `eac-e2e` and the extra file `docker-compose.e2e.yml`. It publishes only the gateway port, so it can run while the development stack is up, and never touches it.
+- The run uses the compose project `eac-e2e` and the extra file `docker-compose.e2e.yml`. It publishes the gateway on `19000` and the services on `19009`, `19010`, `19020` and `19030`, all different from development, so it can run while the development stack is up, and never touches it.
 - `down -v` removes the containers, the volumes and the network, even when checks fail. Leftovers of a killed run are removed when the next run starts.
 - The `eac-e2e/*` images stay on purpose, to speed up the next run. They hold no run data.
 - `docker-compose.e2e.yml` limits the memory of Cassandra and SQL Server. Without it, Cassandra alone reserves a quarter of the host's memory, and two stacks together exhaust it.
@@ -46,6 +46,10 @@ dotnet test e2e/EmployeeAttendanceControl.e2e.test -p:RunE2E=true --filter "Full
 | Area | Tests |
 |------|-------|
 | Sign-in | `Security/AuthenticationTests` |
+| Sessions: renewal, reuse detection, sign-out | `Security/SessionTests` |
+| Only ms.users can issue tokens, through the gateway and directly to each service | `Security/SigningTests` |
+| Passwords never returned; account created with the employee | `Security/PasswordTests` |
+| No service holds a signing secret | `Catalog/SigningSecretTests` |
 | Who can call each operation | `Security/AccessTests`, driven by `Catalog/GatewayRoutes` |
 | Employee → account | `Flows/EmployeeOnboardingTests` |
 | Attendance → history, date range | `Flows/AttendanceFlowTests` |

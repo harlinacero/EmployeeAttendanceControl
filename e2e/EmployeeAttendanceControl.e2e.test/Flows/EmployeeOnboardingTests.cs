@@ -24,10 +24,9 @@ namespace EmployeeAttendanceControl.e2e.test.Flows
             var employees = await _environment.Client.GetEmployeesAsync(_environment.AdminToken);
             Assert.Contains(employees, listed => listed.UserName == employee.UserName && listed.FirstName == employee.FirstName && listed.LastName == employee.LastName);
 
-            await _environment.WaitUntilAsync(
-                () => _environment.Client.TryLoginAsync(employee.UserName, employee.Password),
-                response => response.StatusCode == HttpStatusCode.OK,
-                $"The account of new employee '{employee.UserName}' (created from EmployeeCreateEvent)");
+            // No waiting: the account is created in the same operation as the employee
+            var login = await _environment.Client.TryLoginAsync(employee.UserName, employee.Password);
+            Assert.True(login.StatusCode == HttpStatusCode.OK, $"POST /Authentication right after creating the employee: expected 200, got {(int)login.StatusCode}");
 
             var users = await _environment.Client.GetUsersAsync(_environment.AdminToken);
             Assert.Contains(users, user => user.UserName == employee.UserName && user.Role == "user");

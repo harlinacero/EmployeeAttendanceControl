@@ -15,7 +15,6 @@ namespace ms.users.application.test.Mappers
 
         public UsersMapperProfileTests()
         {
-            MapperConfigurationExpression expression = new();
             _loggerFactoryMock = new Mock<ILoggerFactory>();
             _configuration = new MapperConfiguration(cfg =>
             {
@@ -26,7 +25,7 @@ namespace ms.users.application.test.Mappers
 
         [Fact]
         public void UsersMapperProfileShouldHaveValidConfiguration()
-        {            
+        {
             // Act & Assert
             _configuration.AssertConfigurationIsValid();
         }
@@ -38,34 +37,26 @@ namespace ms.users.application.test.Mappers
             var user = new User
             {
                 UserName = "testuser",
-                Password = "password",
+                PasswordHash = "pbkdf2-sha256$hashed",
                 Role = "user"
             };
 
             // Act
             var userResponse = _mapper.Map<UserResponse>(user);
+
             // Assert
             Assert.Equal(user.UserName, userResponse.UserName);
-            Assert.Equal(user.Password, userResponse.Password);
             Assert.Equal(user.Role, userResponse.Role);
         }
 
         [Fact]
-        public void UsersMapperProfileShouldMapUserResponseToUser()
+        public void UserResponseShouldNotExposePassword()
         {
-            // Arrange
-            var userResponse = new UserResponse
-            {
-                UserName = "testuser",
-                Password = "password",
-                Role = "user"
-            };
             // Act
-            var user = _mapper.Map<User>(userResponse);
+            var properties = typeof(UserResponse).GetProperties().Select(property => property.Name);
+
             // Assert
-            Assert.Equal(userResponse.UserName, user.UserName);
-            Assert.Equal(userResponse.Password, user.Password);
-            Assert.Equal(userResponse.Role, user.Role);
+            Assert.DoesNotContain(properties, name => name.Contains("Password", StringComparison.OrdinalIgnoreCase));
         }
     }
 }

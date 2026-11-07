@@ -13,9 +13,13 @@ builder.Services.AddDataBaseExtension();
 builder.Services.AddComunicationsSettings();
 builder.Services.UseAuthenticationBearer();
 builder.Services.AddSwaggerOpenApi();
+builder.Services.AddExceptionHandler<UsersServiceUnavailableExceptionHandler>();
+builder.Services.AddProblemDetails();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

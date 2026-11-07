@@ -25,13 +25,13 @@ namespace ms.users.application.test.Queries
             // Arrange
             var users = new List<User>
             {
-                new() { UserName = "user1", Password = "password1", Role = "role1" },
-                new() { UserName = "user2", Password = "password2", Role = "role2" }
+                new() { UserName = "user1", PasswordHash = "hash1", Role = "role1" },
+                new() { UserName = "user2", PasswordHash = "hash2", Role = "role2" }
             };
             var userResponses = new List<UserResponse>
             {
-                new() { UserName = "user1", Password = "password1", Role = "role1" },
-                new() { UserName = "user2", Password = "password2", Role = "role2" }
+                new() { UserName = "user1", Role = "role1" },
+                new() { UserName = "user2", Role = "role2" }
             };
 
             _userRepositoryMock.Setup(repo => repo.GetAllUsers())

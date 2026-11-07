@@ -1,4 +1,3 @@
-﻿using ms.rabbitmq.Settings;
 using System.ComponentModel.DataAnnotations;
 
 namespace ms.users.application.Extensions
@@ -7,31 +6,42 @@ namespace ms.users.application.Extensions
     {
         [Required]
         public Authentication Authentication { get; set; }
-
-        [Required]
-        public Communication Communication { get; set; }
     }
-
 
     public class Authentication
     {
         [Required]
         public JWT JWT { get; set; }
+
+        [Required]
+        public SessionLimits Session { get; set; }
     }
 
     public class JWT
     {
         [Required]
-        public string Key { get; set; }
+        public string Issuer { get; set; }
+
+        /// <summary>
+        /// PEM file with the RSA private key. Generated on first start when missing.
+        /// </summary>
+        [Required]
+        public string PrivateKeyPath { get; set; }
 
         [Required]
-        public int ExpirationHours { get; set; }
+        public int AccessTokenMinutes { get; set; }
     }
 
-    public class Communication
+    public class SessionLimits
     {
         [Required]
-        public EventBus EventBus { get; set; }
-    }
+        public int IdleDays { get; set; }
 
+        [Required]
+        public int AbsoluteDays { get; set; }
+
+        public TimeSpan Idle => TimeSpan.FromDays(IdleDays);
+
+        public TimeSpan Absolute => TimeSpan.FromDays(AbsoluteDays);
+    }
 }

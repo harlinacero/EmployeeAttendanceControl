@@ -65,6 +65,11 @@ artifacts/
 
 # Local Docker database data
 data/
+# ...but not the unit tests of a source Data/ folder
+!ms.users/ms.users.test/ms.users.infraestructure.test/Data/
+
+# Signing key that ms.users generates on first start when run outside Docker
+.keys/
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

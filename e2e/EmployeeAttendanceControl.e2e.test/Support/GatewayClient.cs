@@ -6,7 +6,8 @@ namespace EmployeeAttendanceControl.e2e.test.Support
 {
     /// <summary>
     /// Calls the system the way a client does: through the gateway, with no reference to any service.
-    /// Typed helpers throw when the call fails; SendAsync and TryLoginAsync return the response for negative checks.
+    /// Created with a service's URL instead, it calls that service directly.
+    /// Typed helpers throw when the call fails; SendAsync and the Try methods return the response for negative checks.
     /// </summary>
     public class GatewayClient : IDisposable
     {
@@ -23,12 +24,25 @@ namespace EmployeeAttendanceControl.e2e.test.Support
         public Task<HttpResponseMessage> TryLoginAsync(string userName, string password)
             => SendAsync(HttpMethod.Post, "/Authentication", token: null, new { userName, password });
 
-        public async Task<string> LoginAsync(string userName, string password)
+        public async Task<TokenPairDto> LoginAsync(string userName, string password)
         {
             var response = await TryLoginAsync(userName, password);
             await EnsureSuccessAsync(response, $"POST /Authentication as '{userName}'");
-            return await response.Content.ReadAsStringAsync();
+            return (await response.Content.ReadFromJsonAsync<TokenPairDto>())!;
         }
+
+        public Task<HttpResponseMessage> TryRefreshAsync(string? refreshToken)
+            => SendAsync(HttpMethod.Post, "/Authentication/Refresh", token: null, new { refreshToken });
+
+        public async Task<TokenPairDto> RefreshAsync(string refreshToken)
+        {
+            var response = await TryRefreshAsync(refreshToken);
+            await EnsureSuccessAsync(response, "POST /Authentication/Refresh");
+            return (await response.Content.ReadFromJsonAsync<TokenPairDto>())!;
+        }
+
+        public Task<HttpResponseMessage> TryLogoutAsync(string? refreshToken)
+            => SendAsync(HttpMethod.Post, "/Authentication/Logout", token: null, new { refreshToken });
 
         public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string path, string? token = null, object? body = null)
         {

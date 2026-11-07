@@ -13,7 +13,6 @@ COPY ["ms.users/ms.users.api/ms.users.api.csproj", "ms.users/ms.users.api/"]
 COPY ["ms.users/ms.users.application/ms.users.application.csproj", "ms.users/ms.users.application/"]
 COPY ["ms.users/ms.users.domain/ms.users.domain.csproj", "ms.users/ms.users.domain/"]
 COPY ["ms.users/ms.users.infraestructure/ms.users.infraestructure.csproj", "ms.users/ms.users.infraestructure/"]
-COPY ["ms.communications/ms.rabbitmq/ms.rabbitmq.csproj", "ms.communications/ms.rabbitmq/"]
 RUN dotnet restore "ms.users/ms.users.api/ms.users.api.csproj"
 COPY . .
 WORKDIR "/src/ms.users/ms.users.api"

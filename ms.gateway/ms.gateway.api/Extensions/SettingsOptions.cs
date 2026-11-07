@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace ms.gateway.api.Extensions
 {
@@ -16,7 +16,10 @@ namespace ms.gateway.api.Extensions
 
     public class JWT
     {
+        /// <summary>
+        /// Base URL of ms.users. Its public key is downloaded from there; this service can't issue tokens.
+        /// </summary>
         [Required]
-        public string Key { get; set; } = null!;
+        public string Authority { get; set; } = null!;
     }
 }

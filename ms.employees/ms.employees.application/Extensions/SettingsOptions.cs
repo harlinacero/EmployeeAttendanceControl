@@ -1,4 +1,4 @@
-﻿using ms.rabbitmq.Settings;
+using ms.rabbitmq.Settings;
 using System.ComponentModel.DataAnnotations;
 
 namespace ms.employees.application.Extensions
@@ -20,11 +20,11 @@ namespace ms.employees.application.Extensions
 
     public class JWT
     {
+        /// <summary>
+        /// Base URL of ms.users. Its public key is downloaded from there; this service can't issue tokens.
+        /// </summary>
         [Required]
-        public string Key { get; set; }
-
-        [Required]
-        public int ExpirationHours { get; set; }
+        public string Authority { get; set; }
     }
 
 
@@ -38,6 +38,9 @@ namespace ms.employees.application.Extensions
     {
         [Required]
         public string AttendanceApiUrl { get; set; }
+
+        [Required]
+        public string UsersApiUrl { get; set; }
     }
 
 }

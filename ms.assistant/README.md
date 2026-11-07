@@ -35,6 +35,23 @@ The solution is split into four projects:
 - `ms.assistant.domain`: provider-neutral types (`ChatMessage`, `ToolCall`, `ToolResult`, `ModelReply`) and the model port `IAssistantModel`.
 - `ms.assistant.infraestucture`: the Claude adapter (`ClaudeAssistantModel`, `ClaudeMessageMapper`) built on the official `Anthropic` SDK. It is the only project that references the SDK.
 
+```mermaid
+flowchart LR
+	Gateway[ms.gateway.api] -->|POST /Assistant/Chat| Api
+
+	subgraph Assistant[ms.assistant]
+		Api[api\nAssistantController]
+		App[application\nagent loop, tools, Refit clients]
+		Infra[infraestucture\nClaude adapter]
+		Api --> App --> Infra
+	end
+
+	App -->|GET, caller token| Attendances[ms.attendances.api]
+	App -->|GET /Employees, caller token| Employees[ms.employees.api]
+	Infra -->|Messages API, HTTPS| Claude[(Anthropic API)]
+	Api -.->|Public key to validate tokens| Users[ms.users.api]
+```
+
 ## API
 
 In development it is exposed at `http://localhost:9030`. Clients use the gateway (`http://localhost:9000/Assistant/Chat`).
@@ -73,7 +90,7 @@ In development it is exposed at `http://localhost:9030`. Clients use the gateway
 | `Assistant:MaxToolRounds` | `5` | Maximum model calls per question. |
 | `Communication:External:AttendanceApiUrl` | `http://localhost:9020` | Direct URL of ms.attendances (in Docker: `http://ms.attendances.api:80`). |
 | `Communication:External:EmployeeApiUrl` | `http://localhost:9010` | Direct URL of ms.employees (in Docker: `http://ms.employees.api:80`). |
-| `Authentication:JWT` | — | Same key as the other services. |
+| `Authentication:JWT:Authority` | `http://localhost:9009` | URL of `ms.users`, whose public key validates the tokens (in Docker: `http://ms.users.api:80`). This service can't issue tokens. |
 
 The service fails at startup if `Anthropic:ApiKey` is missing.
 
@@ -86,6 +103,7 @@ The service fails at startup if `Anthropic:ApiKey` is missing.
 ## Security
 
 - `[Authorize]` on the controller. The role is taken from `ClaimTypes.Role` and the user from `ClaimTypes.NameIdentifier`.
+- Tokens are only validated here: the public key comes from `ms.users` (`Authentication:JWT:Authority`), only RS256 is accepted, and the service holds nothing that could issue a token.
 - Admin-only tools are never offered to regular users, and the loop refuses any tool outside the allowed list.
 - Read-only: the Refit clients only declare `GET` (a unit test enforces this).
 - Data returned by the services is only passed to the model as tool results, never as instructions. The system prompt says so (protection against prompt injection in notes).

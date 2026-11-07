@@ -1,5 +1,6 @@
 using EmployeeAttendanceControl.e2e.test.Support.Dtos;
 using System.Net;
+using System.Net.Http.Json;
 
 namespace EmployeeAttendanceControl.e2e.test.Support
 {
@@ -25,7 +26,7 @@ namespace EmployeeAttendanceControl.e2e.test.Support
                 throw new InvalidOperationException($"Seeded admin could not sign in: {(int)login.StatusCode}");
             }
 
-            AdminToken = await login.Content.ReadAsStringAsync();
+            AdminToken = (await login.Content.ReadFromJsonAsync<TokenPairDto>())!.AccessToken;
             RegularEmployee = await CreateUsableEmployeeAsync("regular");
         }
 
@@ -38,14 +39,10 @@ namespace EmployeeAttendanceControl.e2e.test.Support
         public async Task<TestEmployee> CreateUsableEmployeeAsync(string tag)
         {
             var userName = TestData.NewUserName(tag);
+            // The account is created in the same operation, so the employee can sign in right away
             await Client.CreateEmployeeAsync(AdminToken, new CreateEmployeeDto(userName, "Test", tag, TestPassword, "user"));
 
-            await WaitUntilAsync(
-                () => Client.TryLoginAsync(userName, TestPassword),
-                response => response.StatusCode == HttpStatusCode.OK,
-                $"The account of new employee '{userName}' (created from EmployeeCreateEvent)");
-
-            return new TestEmployee(userName, "Test", tag, await Client.LoginAsync(userName, TestPassword));
+            return new TestEmployee(userName, "Test", tag, (await Client.LoginAsync(userName, TestPassword)).AccessToken);
         }
 
         public Task<T> WaitUntilAsync<T>(Func<Task<T>> probe, Func<T, bool> done, string what)

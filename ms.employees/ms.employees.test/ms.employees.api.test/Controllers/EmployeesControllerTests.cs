@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using ms.employees.api.Controllers;
@@ -16,6 +16,13 @@ namespace ms.employees.api.test.Controllers
         public EmployeesControllerTests()
         {
             _mediatorMock = new Mock<IMediator>();
+        }
+
+        private EmployeesController CreateControllerWithAuthorization(string authorization)
+        {
+            var httpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext();
+            httpContext.Request.Headers.Authorization = authorization;
+            return new EmployeesController(_mediatorMock.Object) { ControllerContext = new ControllerContext { HttpContext = httpContext } };
         }
 
         [Fact]
@@ -59,7 +66,7 @@ namespace ms.employees.api.test.Controllers
             };
             _mediatorMock.Setup(m => m.Send(It.IsAny<CreateEmployeeCommand>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(createdEmployeeResponse.UserName);
-            var controller = new EmployeesController(_mediatorMock.Object);
+            var controller = CreateControllerWithAuthorization("Bearer admin-token");
             
             // Act
             var result = await controller.Employee(createEmployeeRequest);
@@ -68,6 +75,22 @@ namespace ms.employees.api.test.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             var returnedEmployeeResponse = Assert.IsType<string>(okResult.Value);
             Assert.Equal(createdEmployeeResponse.UserName, okResult.Value);
+        }
+
+        [Fact]
+        public async Task CreateEmployeeShouldPassAuthorizationHeader()
+        {
+            // Arrange
+            var request = new CreateEmployeeRequest { UserName = "newuser", FirstName = "New", LastName = "User", Password = "password", Role = "user" };
+            _mediatorMock.Setup(m => m.Send(It.IsAny<CreateEmployeeCommand>(), It.IsAny<CancellationToken>())).ReturnsAsync("newuser");
+            var controller = CreateControllerWithAuthorization("Bearer admin-token");
+
+            // Act
+            await controller.Employee(request);
+
+            // Assert
+            _mediatorMock.Verify(m => m.Send(
+                new CreateEmployeeCommand("newuser", "New", "User", "password", "user", "Bearer admin-token"), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

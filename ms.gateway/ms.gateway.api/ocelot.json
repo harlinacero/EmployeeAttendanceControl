@@ -8,6 +8,20 @@
       "DownstreamHostAndPorts": [ { "Host": "ms.users.api", "Port": 80 } ]
     },
     {
+      "UpstreamPathTemplate": "/Authentication/Refresh",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Authentication/Refresh",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "ms.users.api", "Port": 80 } ]
+    },
+    {
+      "UpstreamPathTemplate": "/Authentication/Logout",
+      "UpstreamHttpMethod": [ "Post" ],
+      "DownstreamPathTemplate": "/Authentication/Logout",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "ms.users.api", "Port": 80 } ]
+    },
+    {
       "UpstreamPathTemplate": "/User",
       "UpstreamHttpMethod": [ "Get" ],
       "DownstreamPathTemplate": "/User",

@@ -6,10 +6,31 @@ Attendance history service. Exposes queries and creation of attendances and pers
 
 The solution is split into four projects:
 
-- `ms.attendances.api`: HTTP API, JWT, Swagger, and RabbitMQ consumer.
+- `ms.attendances.api`: HTTP API, JWT validation, Swagger, and RabbitMQ consumer.
 - `ms.attendances.application`: commands, queries, handlers, and DTOs.
 - `ms.attendances.domain`: `AttendanceRecord` entity and repository contract.
 - `ms.attendances.infraestucture`: context, mappings, and MongoDB repository.
+
+```mermaid
+flowchart LR
+	Gateway[ms.gateway.api] -->|/Attendances| Api
+	Employees[ms.employees.api] -->|GET /Attendances| Api
+	Assistant[ms.assistant.api] -->|GET /Attendances, /ByDateRange| Api
+	Rabbit[RabbitMQ] -->|AttendanceStateChangedEvent| Consumer
+
+	subgraph Attendances[ms.attendances]
+		Api[api\nAttendancesController]
+		Consumer[api\nAttendancesConsumer]
+		App[application\nqueries and CreateAttendanceCommand]
+		Infra[infraestucture\nMongoDB repository]
+		Api --> App
+		Consumer --> App
+		App --> Infra
+	end
+
+	Infra --> Mongo[(MongoDB\nDbHistoricalAttendance.Attendances)]
+	Api -.->|Public key to validate tokens| Users[ms.users.api]
+```
 
 ## API
 
@@ -52,7 +73,7 @@ When `ms.employees.api` changes the attendance state, it publishes that event. T
 
 ## Security
 
-All attendance endpoints require a valid JWT. The key and token lifetime are configured under `Authentication:JWT` and must match the APIs that issue and validate the tokens.
+All attendance endpoints require a valid JWT issued by `ms.users`. The service only validates tokens: it downloads `ms.users`' public key from `Authentication:JWT:Authority` (in Docker `http://ms.users.api:80`), accepts RS256 only, and holds nothing that could issue a token.
 
 ## Dependencies
 
@@ -86,6 +107,6 @@ Or run the whole solution with `dotnet test EmployeeAttendanceControl.sln`.
 ## Running
 
 ```powershell
-docker compose up -d --build ms.mongo.attendances.db ms.rabbitmq.bus ms.attendances.api
+docker compose up -d --build ms.mongo.attendances.db ms.rabbitmq.bus ms.cassandra.db ms.users.api ms.attendances.api
 docker compose logs -f ms.attendances.api
 ```
